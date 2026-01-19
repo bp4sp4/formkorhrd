@@ -1,13 +1,44 @@
 'use client';
 
 import Image from 'next/image';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import styles from './stepflow.module.css';
 
-export default function StepFlowPage() {
+// click_source 포맷팅 함수
+const formatClickSource = (utmSource: string, materialId: string | null): string => {
+  const sourceMap: { [key: string]: string } = {
+    daangn: '당근마켓',
+    insta: '인스타그램',
+  };
+
+  const koreanSource = sourceMap[utmSource] || utmSource;
+
+  if (materialId) {
+    return `${koreanSource}_소재_${materialId}`; // 예: "당근마켓_소재_123"
+  }
+  return koreanSource; // 예: "당근마켓"
+};
+
+// URL 파라미터를 읽는 컴포넌트
+function ClickSourceHandler({ onSourceChange }: { onSourceChange: (source: string) => void }) {
   const searchParams = useSearchParams();
+
+  useEffect(() => {
+    const utmSource = searchParams.get('utm_source');
+    const materialId = searchParams.get('material_id');
+
+    if (utmSource) {
+      const formatted = formatClickSource(utmSource, materialId);
+      onSourceChange(formatted);
+    }
+  }, [searchParams, onSourceChange]);
+
+  return null;
+}
+
+function StepFlowContent({ clickSource }: { clickSource: string }) {
   const [step, setStep] = useState(1);
   const [formData, setFormData] = useState({
     name: '', // 업종 입력값
@@ -15,33 +46,6 @@ export default function StepFlowPage() {
   });
   const [loading, setLoading] = useState(false);
   const [contactError, setContactError] = useState('');
-  const [clickSource, setClickSource] = useState<string>('baro_form');
-
-  // click_source 포맷팅 함수
-  const formatClickSource = (utmSource: string, materialId: string | null): string => {
-    const sourceMap: { [key: string]: string } = {
-      daangn: '당근마켓',
-      insta: '인스타그램',
-    };
-
-    const koreanSource = sourceMap[utmSource] || utmSource;
-
-    if (materialId) {
-      return `${koreanSource}_소재_${materialId}`; // 예: "당근마켓_소재_123"
-    }
-    return koreanSource; // 예: "당근마켓"
-  };
-
-  // URL 파라미터에서 click_source 추출
-  useEffect(() => {
-    const utmSource = searchParams.get('utm_source');
-    const materialId = searchParams.get('material_id');
-
-    if (utmSource) {
-      const formatted = formatClickSource(utmSource, materialId);
-      setClickSource(formatted);
-    }
-  }, [searchParams]);
 
   // 연락처 포맷팅 (010-XXXX-XXXX)
   const formatContact = (value: string) => {
@@ -225,5 +229,25 @@ export default function StepFlowPage() {
         )}
       </AnimatePresence>
     </div>
+  );
+}
+
+export default function StepFlowPage() {
+  const [clickSource, setClickSource] = useState<string>('baro_form');
+
+  return (
+    <Suspense fallback={
+      <div className={styles.container}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh' }}>
+          <div className="text-center">
+            <div className="inline-block animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500"></div>
+            <p className="mt-4 text-gray-600">로딩 중...</p>
+          </div>
+        </div>
+      </div>
+    }>
+      <ClickSourceHandler onSourceChange={setClickSource} />
+      <StepFlowContent clickSource={clickSource} />
+    </Suspense>
   );
 }
