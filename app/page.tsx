@@ -245,8 +245,8 @@ function StepFlowContent({ clickSource }: { clickSource: string }) {
             <Image
               src="/complete-check.png"
               alt="Done"
-              width={80}
-              height={80}
+              width={300}
+              height={300}
               style={{ margin: '0 auto 24px' }}
             />
             <h1 className={styles.title}>신청이 완료되었습니다.{"\n"}곧 연락드리겠습니다.</h1>
