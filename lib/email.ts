@@ -74,8 +74,8 @@ export async function sendConsultationEmail(data: ConsultationEmailData) {
 
     // 수신자 이메일: CONSULTATION_EMAIL이 있으면 사용, 없으면 기본값
     const recipientEmail = process.env.CONSULTATION_EMAIL || "bp4sp4@naver.com";
-    // 로고 URL - 이메일에서는 절대 URL이 필요합니다
-    const logoUrl = "https://i.ibb.co/HPbZ8FS/logo.png"; // 또는 배포된 사이트의 전체 URL 사용
+    // 로고 URL - 배포된 사이트의 로고 사용
+    const logoUrl = "https://barosocial.vercel.app/logo.png";
 
     console.log("[EMAIL] 설정 확인:");
     console.log("[EMAIL] - BREVO_SMTP_LOGIN 존재:", !!smtpLogin);
