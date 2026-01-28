@@ -16,6 +16,8 @@ interface Consultation {
   click_source: string | null;
   memo: string | null;
   status: ConsultationStatus;
+  subject_cost: number | null;
+  manager: string | null;
   created_at: string;
 }
 
@@ -26,17 +28,29 @@ export default function AdminPage() {
   const [showAddModal, setShowAddModal] = useState(false);
   const [showMemoModal, setShowMemoModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
+  const [showSubjectCostModal, setShowSubjectCostModal] = useState(false);
+  const [showManagerModal, setShowManagerModal] = useState(false);
   const [selectedConsultation, setSelectedConsultation] = useState<Consultation | null>(null);
   const [memoText, setMemoText] = useState('');
+  const [subjectCostText, setSubjectCostText] = useState('');
+  const [managerText, setManagerText] = useState('');
   const [selectedIds, setSelectedIds] = useState<number[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
+  // 필터 상태
+  const [searchText, setSearchText] = useState('');
+  const [statusFilter, setStatusFilter] = useState<ConsultationStatus | 'all'>('all');
+  const [managerFilter, setManagerFilter] = useState('all');
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
   const [formData, setFormData] = useState({
     name: '',
     contact: '',
     education: '',
     reason: '',
-    click_source: ''
+    click_source: '',
+    subject_cost: '',
+    manager: ''
   });
   const router = useRouter();
 
@@ -120,7 +134,9 @@ export default function AdminPage() {
         contact: '',
         education: '',
         reason: '',
-        click_source: ''
+        click_source: '',
+        subject_cost: '',
+        manager: ''
       });
       setShowAddModal(false);
       fetchConsultations();
@@ -165,6 +181,83 @@ export default function AdminPage() {
     setMemoText('');
   };
 
+  // 과목비용 모달 열기/닫기
+  const openSubjectCostModal = (consultation: Consultation) => {
+    setSelectedConsultation(consultation);
+    setSubjectCostText(consultation.subject_cost ? consultation.subject_cost.toLocaleString() : '');
+    setShowSubjectCostModal(true);
+  };
+
+  const closeSubjectCostModal = () => {
+    setShowSubjectCostModal(false);
+    setSelectedConsultation(null);
+    setSubjectCostText('');
+  };
+
+  // 과목비용 업데이트
+  const handleUpdateSubjectCost = async () => {
+    if (!selectedConsultation) return;
+    
+    try {
+      const numericValue = subjectCostText.replace(/,/g, '');
+      const response = await fetch('/api/consultations', {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ 
+          id: selectedConsultation.id, 
+          subject_cost: numericValue ? parseInt(numericValue) : null 
+        }),
+      });
+
+      if (!response.ok) throw new Error('과목비용 업데이트 실패');
+
+      closeSubjectCostModal();
+      fetchConsultations();
+    } catch (error) {
+      alert('과목비용 저장에 실패했습니다.');
+    }
+  };
+
+  // 담당자 모달 열기/닫기
+  const openManagerModal = (consultation: Consultation) => {
+    setSelectedConsultation(consultation);
+    setManagerText(consultation.manager || '');
+    setShowManagerModal(true);
+  };
+
+  const closeManagerModal = () => {
+    setShowManagerModal(false);
+    setSelectedConsultation(null);
+    setManagerText('');
+  };
+
+  // 담당자 업데이트
+  const handleUpdateManager = async () => {
+    if (!selectedConsultation) return;
+    
+    try {
+      const response = await fetch('/api/consultations', {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ 
+          id: selectedConsultation.id, 
+          manager: managerText || null 
+        }),
+      });
+
+      if (!response.ok) throw new Error('담당자 업데이트 실패');
+
+      closeManagerModal();
+      fetchConsultations();
+    } catch (error) {
+      alert('담당자 저장에 실패했습니다.');
+    }
+  };
+
   // 전화번호 자동 포맷팅
   const formatPhoneNumber = (value: string) => {
     const numbers = value.replace(/[^0-9]/g, '');
@@ -177,6 +270,23 @@ export default function AdminPage() {
   const handleContactChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const formatted = formatPhoneNumber(e.target.value);
     setFormData({ ...formData, contact: formatted });
+  };
+
+  // 과목비용 포맷팅 (콤마 추가)
+  const formatSubjectCost = (value: string) => {
+    const numbers = value.replace(/[^0-9]/g, '');
+    if (!numbers) return '';
+    return parseInt(numbers).toLocaleString();
+  };
+
+  const handleSubjectCostChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const formatted = formatSubjectCost(e.target.value);
+    setSubjectCostText(formatted);
+  };
+
+  const handleFormSubjectCostChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const formatted = formatSubjectCost(e.target.value);
+    setFormData({ ...formData, subject_cost: formatted });
   };
 
   // 수정 모달 열기
@@ -193,7 +303,9 @@ export default function AdminPage() {
         contact: consultation.contact,
         education: consultation.education || '',
         reason: consultation.reason || '',
-        click_source: consultation.click_source || ''
+        click_source: consultation.click_source || '',
+        subject_cost: consultation.subject_cost ? consultation.subject_cost.toLocaleString() : '',
+        manager: consultation.manager || ''
       });
       setShowEditModal(true);
     }
@@ -217,6 +329,8 @@ export default function AdminPage() {
           education: formData.education || null,
           reason: formData.reason || null,
           click_source: formData.click_source || null,
+          subject_cost: formData.subject_cost ? parseInt(formData.subject_cost.replace(/,/g, '')) : null,
+          manager: formData.manager || null,
         }),
       });
 
@@ -227,7 +341,9 @@ export default function AdminPage() {
         contact: '',
         education: '',
         reason: '',
-        click_source: ''
+        click_source: '',
+        subject_cost: '',
+        manager: ''
       });
       setShowEditModal(false);
       setSelectedConsultation(null);
@@ -303,22 +419,218 @@ export default function AdminPage() {
     }
   };
 
-  // 페이징 계산
-  const totalPages = Math.ceil(consultations.length / itemsPerPage);
+  // 필터링
+  const filteredConsultations = consultations.filter(consultation => {
+    // 검색 텍스트 필터 (이름, 연락처, 취득사유, 메모)
+    if (searchText) {
+      const searchLower = searchText.toLowerCase();
+      const matchesSearch = 
+        consultation.name.toLowerCase().includes(searchLower) ||
+        consultation.contact.toLowerCase().includes(searchLower) ||
+        (consultation.reason && consultation.reason.toLowerCase().includes(searchLower)) ||
+        (consultation.memo && consultation.memo.toLowerCase().includes(searchLower));
+      if (!matchesSearch) return false;
+    }
+    
+    // 상태 필터
+    if (statusFilter !== 'all' && consultation.status !== statusFilter) {
+      return false;
+    }
+    
+    // 담당자 필터
+    if (managerFilter !== 'all') {
+      if (managerFilter === 'none' && consultation.manager) return false;
+      if (managerFilter !== 'none' && consultation.manager !== managerFilter) return false;
+    }
+    
+    // 날짜 필터
+    if (startDate || endDate) {
+      const consultationDate = new Date(consultation.created_at);
+      
+      if (startDate) {
+        const start = new Date(startDate);
+        start.setHours(0, 0, 0, 0);
+        if (consultationDate < start) return false;
+      }
+      if (endDate) {
+        const end = new Date(endDate);
+        end.setHours(23, 59, 59, 999);
+        if (consultationDate > end) return false;
+      }
+    }
+    
+    return true;
+  });
+
+  // 페이징 계산 (필터링된 데이터 기준)
+  const totalPages = Math.ceil(filteredConsultations.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
   const endIndex = startIndex + itemsPerPage;
-  const paginatedConsultations = consultations.slice(startIndex, endIndex);
+  const paginatedConsultations = filteredConsultations.slice(startIndex, endIndex);
+
+  // 고유 담당자 목록
+  const uniqueManagers = Array.from(new Set(consultations.map(c => c.manager).filter(Boolean))) as string[];
 
   const goToPage = (page: number) => {
     setCurrentPage(page);
     setSelectedIds([]);
   };
 
+  // 검색어 하이라이트 함수
+  const highlightText = (text: string | null | undefined, query: string) => {
+    if (!text || !query) return text || '';
+    
+    const parts = text.split(new RegExp(`(${query})`, 'gi'));
+    return parts.map((part, index) => 
+      part.toLowerCase() === query.toLowerCase() 
+        ? <span key={index} className={styles.highlight}>{part}</span>
+        : part
+    );
+  };
+
+  // 엑셀 다운로드 함수
+  const handleExcelDownload = () => {
+    // 선택된 항목이 있으면 선택된 것만, 없으면 필터링된 전체 다운로드
+    const dataToDownload = selectedIds.length > 0 
+      ? consultations.filter(c => selectedIds.includes(c.id))
+      : filteredConsultations;
+
+    if (dataToDownload.length === 0) {
+      alert('다운로드할 데이터가 없습니다.');
+      return;
+    }
+
+    // CSV 형식으로 다운로드
+    const headers = ['이름', '연락처', '최종학력', '취득사유', '유입 경로', '과목비용', '담당자', '메모', '신청일시', '상태'];
+    const csvData = dataToDownload.map(consultation => [
+      consultation.name,
+      consultation.contact,
+      consultation.education || '',
+      consultation.reason || '',
+      consultation.click_source || '',
+      consultation.subject_cost || '',
+      consultation.manager || '',
+      consultation.memo || '',
+      formatDate(consultation.created_at),
+      consultation.status || '상담대기중'
+    ]);
+
+    const csvContent = [
+      headers.join(','),
+      ...csvData.map(row => row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(','))
+    ].join('\n');
+
+    // UTF-8 BOM 추가 (엑셀에서 한글 깨짐 방지)
+    const BOM = '\uFEFF';
+    const blob = new Blob([BOM + csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    
+    const fileName = selectedIds.length > 0 
+      ? `상담신청_선택${selectedIds.length}건_${new Date().toISOString().split('T')[0]}.csv`
+      : `상담신청_${new Date().toISOString().split('T')[0]}.csv`;
+    
+    link.setAttribute('href', url);
+    link.setAttribute('download', fileName);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   // 관리자 대시보드
   return (
     <div className={styles.container}>
       <header className={styles.header}>
-        <h1 className={styles.title}>상담 신청 관리 ({consultations.length}건)</h1>
+        <h1 className={styles.title}>상담 신청 관리 ({filteredConsultations.length}건)</h1>
+        
+        {/* 필터 영역 */}
+        <div className={styles.filterRow}>
+          <div className={styles.filterGroup}>
+            <input
+              type="text"
+              placeholder="이름, 연락처, 취득사유, 메모 검색..."
+              value={searchText}
+              onChange={(e) => {
+                setSearchText(e.target.value);
+                setCurrentPage(1);
+              }}
+              className={styles.searchInput}
+            />
+          </div>
+          <div className={styles.filterGroup}>
+            <select
+              value={statusFilter}
+              onChange={(e) => {
+                setStatusFilter(e.target.value as ConsultationStatus | 'all');
+                setCurrentPage(1);
+              }}
+              className={styles.filterSelect}
+            >
+              <option value="all">전체 상태</option>
+              <option value="상담대기중">상담대기중</option>
+              <option value="상담중">상담중</option>
+              <option value="상담완료">상담완료</option>
+              <option value="등록완료">등록완료</option>
+            </select>
+          </div>
+          <div className={styles.filterGroup}>
+            <select
+              value={managerFilter}
+              onChange={(e) => {
+                setManagerFilter(e.target.value);
+                setCurrentPage(1);
+              }}
+              className={styles.filterSelect}
+            >
+              <option value="all">전체 담당자</option>
+              <option value="none">담당자 없음</option>
+              {uniqueManagers.map(manager => (
+                <option key={manager} value={manager}>{manager}</option>
+              ))}
+            </select>
+          </div>
+          <div className={styles.filterGroup}>
+            <input
+              type="date"
+              value={startDate}
+              onChange={(e) => {
+                setStartDate(e.target.value);
+                setCurrentPage(1);
+              }}
+              className={styles.dateInput}
+              placeholder="시작일"
+            />
+          </div>
+          <div className={styles.filterGroup}>
+            <input
+              type="date"
+              value={endDate}
+              onChange={(e) => {
+                setEndDate(e.target.value);
+                setCurrentPage(1);
+              }}
+              className={styles.dateInput}
+              placeholder="종료일"
+            />
+          </div>
+          {(searchText || statusFilter !== 'all' || managerFilter !== 'all' || startDate || endDate) && (
+            <button 
+              onClick={() => {
+                setSearchText('');
+                setStatusFilter('all');
+                setManagerFilter('all');
+                setStartDate('');
+                setEndDate('');
+                setCurrentPage(1);
+              }}
+              className={styles.clearFilterButton}
+            >
+              필터 초기화
+            </button>
+          )}
+        </div>
+
         <div className={styles.headerActions}>
           <button onClick={() => setShowAddModal(true)} className={styles.addButton}>
             추가
@@ -333,6 +645,9 @@ export default function AdminPage() {
               삭제 ({selectedIds.length})
             </button>
           )}
+          <button onClick={handleExcelDownload} className={styles.excelButton}>
+            {selectedIds.length > 0 ? `선택 항목 다운로드 (${selectedIds.length})` : '엑셀 다운로드'}
+          </button>
           <button onClick={fetchConsultations} className={styles.refreshButton}>
             새로고침
           </button>
@@ -363,6 +678,8 @@ export default function AdminPage() {
                 <th>최종학력</th>
                 <th>취득사유</th>
                 <th>유입 경로</th>
+                <th>과목비용</th>
+                <th>담당자</th>
                 <th>메모</th>
                 <th>신청일시</th>
                 <th>상태</th>
@@ -371,7 +688,7 @@ export default function AdminPage() {
             <tbody>
               {paginatedConsultations.length === 0 ? (
                 <tr>
-                  <td colSpan={9} className={styles.empty}>
+                  <td colSpan={11} className={styles.empty}>
                     신청 내역이 없습니다.
                   </td>
                 </tr>
@@ -385,17 +702,33 @@ export default function AdminPage() {
                         onChange={() => toggleSelect(consultation.id)}
                       />
                     </td>
-                    <td>{consultation.name}</td>
-                    <td>{consultation.contact}</td>
+                    <td>{highlightText(consultation.name, searchText)}</td>
+                    <td>{highlightText(consultation.contact, searchText)}</td>
                     <td>{consultation.education || '-'}</td>
-                    <td className={styles.reasonCell}>{consultation.reason || '-'}</td>
+                    <td className={styles.reasonCell}>{highlightText(consultation.reason, searchText)}</td>
                     <td>{consultation.click_source || '-'}</td>
                     <td>
                       <div 
-                        className={styles.memoCell}
+                        className={`${styles.memoCell} ${!consultation.subject_cost ? styles.empty : ''}`}
+                        onClick={() => openSubjectCostModal(consultation)}
+                      >
+                        {consultation.subject_cost ? consultation.subject_cost.toLocaleString() + '원' : '비용 입력...'}
+                      </div>
+                    </td>
+                    <td>
+                      <div 
+                        className={`${styles.memoCell} ${!consultation.manager ? styles.empty : ''}`}
+                        onClick={() => openManagerModal(consultation)}
+                      >
+                        {consultation.manager ? highlightText(consultation.manager, searchText) : '담당자 입력...'}
+                      </div>
+                    </td>
+                    <td>
+                      <div 
+                        className={`${styles.memoCell} ${!consultation.memo ? styles.empty : ''}`}
                         onClick={() => openMemoModal(consultation)}
                       >
-                        {consultation.memo || '메모 추가...'}
+                        {consultation.memo ? highlightText(consultation.memo, searchText) : '메모 추가...'}
                       </div>
                     </td>
                     <td>{formatDate(consultation.created_at)}</td>
@@ -452,7 +785,7 @@ export default function AdminPage() {
       {showAddModal && (
         <div className={styles.modalOverlay} onClick={() => setShowAddModal(false)}>
           <div className={styles.modalContent} onClick={(e) => e.stopPropagation()}>
-            <h2 className={styles.modalTitle}>상담 신청 수동 추가</h2>
+            <h2 className={styles.modalTitle}>상담 신청 추가</h2>
             <form onSubmit={handleAddConsultation} className={styles.modalForm}>
               <div className={styles.formGroup}>
                 <label>이름 *</label>
@@ -504,6 +837,24 @@ export default function AdminPage() {
                   value={formData.click_source}
                   onChange={(e) => setFormData({ ...formData, click_source: e.target.value })}
                   placeholder="예: naver, google 등 (선택사항)"
+                />
+              </div>
+              <div className={styles.formGroup}>
+                <label>과목비용</label>
+                <input
+                  type="text"
+                  value={formData.subject_cost}
+                  onChange={handleFormSubjectCostChange}
+                  placeholder="숫자만 입력 (선택사항)"
+                />
+              </div>
+              <div className={styles.formGroup}>
+                <label>담당자</label>
+                <input
+                  type="text"
+                  value={formData.manager}
+                  onChange={(e) => setFormData({ ...formData, manager: e.target.value })}
+                  placeholder="담당자 이름 (선택사항)"
                 />
               </div>
               <div className={styles.modalActions}>
@@ -575,6 +926,24 @@ export default function AdminPage() {
                   placeholder="예: naver, google 등 (선택사항)"
                 />
               </div>
+              <div className={styles.formGroup}>
+                <label>과목비용</label>
+                <input
+                  type="text"
+                  value={formData.subject_cost}
+                  onChange={handleFormSubjectCostChange}
+                  placeholder="숫자만 입력 (선택사항)"
+                />
+              </div>
+              <div className={styles.formGroup}>
+                <label>담당자</label>
+                <input
+                  type="text"
+                  value={formData.manager}
+                  onChange={(e) => setFormData({ ...formData, manager: e.target.value })}
+                  placeholder="담당자 이름 (선택사항)"
+                />
+              </div>
               <div className={styles.modalActions}>
                 <button type="submit" className={styles.submitButton}>수정하기</button>
                 <button type="button" onClick={() => setShowEditModal(false)} className={styles.cancelButton}>
@@ -610,6 +979,66 @@ export default function AdminPage() {
                 저장
               </button>
               <button onClick={closeMemoModal} className={styles.cancelButton}>
+                취소
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 과목비용 편집 모달 */}
+      {showSubjectCostModal && selectedConsultation && (
+        <div className={styles.modalOverlay} onClick={closeSubjectCostModal}>
+          <div className={styles.modalContent} onClick={(e) => e.stopPropagation()}>
+            <h2 className={styles.modalTitle}>과목비용 편집</h2>
+            <div className={styles.memoInfo}>
+              <p><strong>이름:</strong> {selectedConsultation.name}</p>
+              <p><strong>연락처:</strong> {selectedConsultation.contact}</p>
+            </div>
+            <div className={styles.formGroup}>
+              <label>과목비용</label>
+              <input
+                type="text"
+                value={subjectCostText}
+                onChange={handleSubjectCostChange}
+                placeholder="숫자만 입력하세요..."
+              />
+            </div>
+            <div className={styles.modalActions}>
+              <button onClick={handleUpdateSubjectCost} className={styles.submitButton}>
+                저장
+              </button>
+              <button onClick={closeSubjectCostModal} className={styles.cancelButton}>
+                취소
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 담당자 편집 모달 */}
+      {showManagerModal && selectedConsultation && (
+        <div className={styles.modalOverlay} onClick={closeManagerModal}>
+          <div className={styles.modalContent} onClick={(e) => e.stopPropagation()}>
+            <h2 className={styles.modalTitle}>담당자 편집</h2>
+            <div className={styles.memoInfo}>
+              <p><strong>이름:</strong> {selectedConsultation.name}</p>
+              <p><strong>연락처:</strong> {selectedConsultation.contact}</p>
+            </div>
+            <div className={styles.formGroup}>
+              <label>담당자</label>
+              <input
+                type="text"
+                value={managerText}
+                onChange={(e) => setManagerText(e.target.value)}
+                placeholder="담당자 이름을 입력하세요..."
+              />
+            </div>
+            <div className={styles.modalActions}>
+              <button onClick={handleUpdateManager} className={styles.submitButton}>
+                저장
+              </button>
+              <button onClick={closeManagerModal} className={styles.cancelButton}>
                 취소
               </button>
             </div>
