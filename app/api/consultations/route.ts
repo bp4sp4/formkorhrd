@@ -77,7 +77,7 @@ export async function POST(request: NextRequest) {
           education: education || null,
           reason: reason || null,
           click_source: click_source || null,
-          status: '상담대기중', // 기본 상태
+          status: '상담대기', // 기본 상태
         },
       ])
       .select()

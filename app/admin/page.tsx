@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import styles from './admin.module.css';
 
-type ConsultationStatus = '상담대기중' | '상담중' | '상담완료' | '등록완료';
+type ConsultationStatus = '상담대기' | '상담중' | '보류' | '등록대기' | '등록완료';
 
 interface Consultation {
   id: number;
@@ -88,7 +88,7 @@ export default function AdminPage() {
       // status가 없는 데이터에 기본값 설정
       const consultationsWithStatus = (data || []).map(item => ({
         ...item,
-        status: item.status || '상담대기중'
+        status: item.status || '상담대기'
       }));
 
       setConsultations(consultationsWithStatus);
@@ -622,9 +622,10 @@ export default function AdminPage() {
               className={styles.filterSelect}
             >
               <option value="all">전체 상태</option>
-              <option value="상담대기중">상담대기중</option>
+              <option value="상담대기">상담대기</option>
               <option value="상담중">상담중</option>
-              <option value="상담완료">상담완료</option>
+              <option value="보류">보류</option>
+              <option value="등록대기">등록대기</option>
               <option value="등록완료">등록완료</option>
             </select>
           </div>
@@ -789,13 +790,14 @@ export default function AdminPage() {
                     <td>{formatDate(consultation.created_at)}</td>
                     <td>
                       <select
-                        value={consultation.status || '상담대기중'}
+                        value={consultation.status || '상담대기'}
                         onChange={(e) => handleStatusChange(consultation.id, e.target.value as ConsultationStatus)}
-                        className={`${styles.statusSelect} ${styles[`status${(consultation.status || '상담대기중').replace(/\s/g, '')}`]}`}
+                        className={`${styles.statusSelect} ${styles[`status${(consultation.status || '상담대기').replace(/\s/g, '')}`]}`}
                       >
-                        <option value="상담대기중">상담대기중</option>
+                        <option value="상담대기">상담대기</option>
                         <option value="상담중">상담중</option>
-                        <option value="상담완료">상담완료</option>
+                        <option value="보류">보류</option>
+                        <option value="등록대기">등록대기</option>
                         <option value="등록완료">등록완료</option>
                       </select>
                     </td>

@@ -251,7 +251,7 @@
   background: #e5e8eb;
 }
 
-.table .statusSelect.status상담대기중 {
+.table .statusSelect.status상담대기 {
   background: #f3f4f6;
   color: #6b7280;
 }
@@ -261,7 +261,12 @@
   color: #92400e;
 }
 
-.table .statusSelect.status상담완료 {
+.table .statusSelect.status보류 {
+  background: #fecaca;
+  color: #b91c1c;
+}
+
+.table .statusSelect.status등록대기 {
   background: #dbeafe;
   color: #1e40af;
 }
@@ -341,7 +346,7 @@
 .table {
   width: 100%;
   border-collapse: collapse;
-  min-width: 800px;
+  min-width: 1200px;
 }
 
 .table thead {
@@ -401,7 +406,7 @@
   white-space: nowrap;
 }
 
-.status상담대기중 {
+.status상담대기 {
   background: #f3f4f6;
   color: #6b7280;
 }
@@ -411,7 +416,12 @@
   color: #92400e;
 }
 
-.status상담완료 {
+.status보류 {
+  background: #fecaca;
+  color: #b91c1c;
+}
+
+.status등록대기 {
   background: #dbeafe;
   color: #1e40af;
 }
@@ -600,7 +610,7 @@
   
   
   /* 말줄임표 */
-  max-width: 150px;
+  max-width: 200px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
