@@ -159,16 +159,30 @@ function StepFlowContent({ clickSource }: { clickSource: string }) {
             {/* 하단 안내 및 다음 버튼 */}
             <div className={styles.infoSection}>
               <div className={styles.infoInner}>
+                          <div style={{ textAlign: 'left', marginBottom: '24px' }}>
+              <h1 style={{
+                fontSize: '28px',
+                fontWeight: '700',
+                color: '#111827',
+                marginBottom: '8px',
+                lineHeight: '1.3'
+              }}>사회복지사</h1>
+              <p style={{
+                fontSize: '28px',
+                fontWeight: '700',
+                color: '#111827',
+              }}>무료 상담신청</p>
+            </div>
                 <div className={styles.infoItem}>
-                  <div className={styles.infoTitle}>1. 수업료 지원 혜택</div>
+                  <div className={styles.infoTitle}><div className={styles.infoNumber}>1</div> 수업료 지원 혜택</div>
                   <div className={styles.infoDesc}>상담 완료 후 수강료 70% 할인혜택</div>
                 </div>
                 <div className={styles.infoItem}>
-                  <div className={styles.infoTitle}>2. 국가자격증 여부</div>
+                  <div className={styles.infoTitle}><div className={styles.infoNumber}>2</div> 국가자격증 여부</div>
                   <div className={styles.infoDesc}>사회복지사 자격증은 보건복지부 발급 국가자격증</div>
                 </div>
                 <div className={styles.infoItem}>
-                  <div className={styles.infoTitle}>3. 온라인 수업</div>
+                  <div className={styles.infoTitle}><div className={styles.infoNumber}>3</div> 온라인 수업</div>
                   <div className={styles.infoDesc}>모든 수업은 100% 온라인으로 진행</div>
                 </div>
                 <div className={styles.infoCall}>
