@@ -263,15 +263,15 @@ function StepFlowContent({ clickSource }: { clickSource: string }) {
                     <div className={styles.infoNumber}>2</div> 취업 컨설팅
                   </div>
                   <div className={styles.infoDesc}>
-                    취업 컨설팅 및 취업 연계 지원
+                    취업컨설팅 후 실제 취업까지
                   </div>
                 </div>
                 <div className={styles.infoItem}>
                   <div className={styles.infoTitle}>
-                    <div className={styles.infoNumber}>3</div> 연계 지원
+                    <div className={styles.infoNumber}>3</div> 취업 연계
                   </div>
                   <div className={styles.infoDesc}>
-                    자격증 취득 후 취업 연계 지원
+                    취업컨설팅 후 실제 취업까지
                   </div>
                 </div>
                 <div className={styles.infoSection}>
@@ -465,7 +465,7 @@ function StepFlowContent({ clickSource }: { clickSource: string }) {
               className={styles.step3Image}
             />
             <h1 className={styles.title}>
-              신청이 완료되었습니다.{"\n"}곧 연락드리겠습니다.
+              신청이 완료되었습니다.{"\n"}1일 이내로 연락드리겠습니다.
             </h1>
           </motion.div>
         )}
