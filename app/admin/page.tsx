@@ -6,6 +6,7 @@ import { supabase } from '@/lib/supabase';
 import styles from './admin.module.css';
 
 type ConsultationStatus = '상담대기' | '상담중' | '실습처배정' | '취업처연계' | '완료';
+type PracticeStatus = 'pending' | 'in_progress' | 'completed';
 type FormType = 'consultation' | 'practice';
 type StudentStatus = '상담대기' | '상담중' | '실습처배정' | '취업처연계완료';
 type StudyMethod = '구법' | '신법' | '구법+신법';
@@ -35,17 +36,46 @@ interface Consultation {
   created_at: string;
 }
 
+interface PracticeApplication {
+  id: string;
+  student_name: string;
+  gender: string | null;
+  contact: string;
+  birth_date: string | null;
+  residence_area: string | null;
+  address: string | null;
+  practice_start_date: string | null;
+  grade_report_date: string | null;
+  preferred_semester: string | null;
+  practice_type: string | null;
+  preferred_days: string | null;
+  has_car: boolean;
+  cash_receipt_number: string | null;
+  privacy_agreed: boolean;
+  status: PracticeStatus;
+  memo: string | null;
+  notes: string | null;
+  is_completed: boolean;
+  manager: string | null;
+  click_source: string | null;
+  practice_place: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
 export default function AdminPage() {
   const [activeTab, setActiveTab] = useState<'consultation' | 'practice'>('consultation');
   const [consultations, setConsultations] = useState<Consultation[]>([]);
+  const [practiceApplications, setPracticeApplications] = useState<PracticeApplication[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [showAddModal, setShowAddModal] = useState(false);
   const [showMemoModal, setShowMemoModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [selectedConsultation, setSelectedConsultation] = useState<Consultation | null>(null);
+  const [selectedPractice, setSelectedPractice] = useState<PracticeApplication | null>(null);
   const [memoText, setMemoText] = useState('');
-  const [selectedIds, setSelectedIds] = useState<number[]>([]);
+  const [selectedIds, setSelectedIds] = useState<(number | string)[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
   // 필터 상태
@@ -82,11 +112,18 @@ export default function AdminPage() {
   const checkAuth = async () => {
     const { data: { user } } = await supabase.auth.getUser();
     if (user) {
-      fetchConsultations();
+      fetchData();
     } else {
       router.push('/admin/login');
     }
   };
+
+  // 탭 변경 시 데이터 다시 가져오기
+  useEffect(() => {
+    if (activeTab) {
+      fetchData();
+    }
+  }, [activeTab]);
 
   // 로그아웃
   const handleLogout = async () => {
@@ -94,29 +131,41 @@ export default function AdminPage() {
     router.push('/admin/login');
   };
 
-  // 상담 신청 목록 가져오기
-  const fetchConsultations = async () => {
+  // 데이터 가져오기 (탭에 따라 다른 API 호출)
+  const fetchData = async () => {
     setLoading(true);
     try {
-      const response = await fetch('/api/consultations');
-      if (!response.ok) {
-        throw new Error('상담 신청 목록을 불러오는데 실패했습니다.');
+      if (activeTab === 'consultation') {
+        const response = await fetch('/api/consultations');
+        if (!response.ok) {
+          throw new Error('상담 신청 목록을 불러오는데 실패했습니다.');
+        }
+        const data = await response.json();
+
+        // status가 없는 데이터에 기본값 설정
+        const consultationsWithStatus = (data || []).map((item: any) => ({
+          ...item,
+          status: item.status || '상담대기'
+        }));
+
+        setConsultations(consultationsWithStatus);
+      } else {
+        const response = await fetch('/api/practice-applications');
+        if (!response.ok) {
+          throw new Error('실습섭외신청서 목록을 불러오는데 실패했습니다.');
+        }
+        const data = await response.json();
+        setPracticeApplications(data || []);
       }
-      const data = await response.json();
-
-      // status가 없는 데이터에 기본값 설정
-      const consultationsWithStatus = (data || []).map((item: any) => ({
-        ...item,
-        status: item.status || '상담대기'
-      }));
-
-      setConsultations(consultationsWithStatus);
     } catch (error: any) {
       setError(error.message || '데이터를 불러오는데 실패했습니다.');
     } finally {
       setLoading(false);
     }
   };
+
+  // 상담 신청 목록 가져오기 (레거시 호환)
+  const fetchConsultations = fetchData;
 
   // 날짜 포맷팅
   const formatDate = (dateString: string) => {
@@ -174,23 +223,27 @@ export default function AdminPage() {
 
   // 메모 수정
   const handleUpdateMemo = async () => {
-    if (!selectedConsultation) return;
-    
+    if (!selectedConsultation && !selectedPractice) return;
+
     try {
-      const response = await fetch('/api/consultations', {
+      const apiEndpoint = activeTab === 'consultation' ? '/api/consultations' : '/api/practice-applications';
+      const id = selectedConsultation?.id || selectedPractice?.id;
+
+      const response = await fetch(apiEndpoint, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ id: selectedConsultation.id, memo: memoText }),
+        body: JSON.stringify({ id, memo: memoText }),
       });
 
       if (!response.ok) throw new Error('메모 업데이트 실패');
 
       setShowMemoModal(false);
       setSelectedConsultation(null);
+      setSelectedPractice(null);
       setMemoText('');
-      fetchConsultations();
+      fetchData();
     } catch (error) {
       alert('메모 저장에 실패했습니다.');
     }
@@ -205,6 +258,7 @@ export default function AdminPage() {
   const closeMemoModal = () => {
     setShowMemoModal(false);
     setSelectedConsultation(null);
+    setSelectedPractice(null);
     setMemoText('');
   };
 
@@ -330,14 +384,15 @@ export default function AdminPage() {
 
   // 체크박스 관련 함수
   const toggleSelectAll = () => {
-    if (selectedIds.length === paginatedConsultations.length) {
+    const currentPageData = activeTab === 'consultation' ? paginatedConsultations : paginatedPracticeApplications;
+    if (selectedIds.length === currentPageData.length) {
       setSelectedIds([]);
     } else {
-      setSelectedIds(paginatedConsultations.map(c => c.id));
+      setSelectedIds(currentPageData.map(c => c.id));
     }
   };
 
-  const toggleSelect = (id: number) => {
+  const toggleSelect = (id: number | string) => {
     if (selectedIds.includes(id)) {
       setSelectedIds(selectedIds.filter(selectedId => selectedId !== id));
     } else {
@@ -357,7 +412,8 @@ export default function AdminPage() {
     }
 
     try {
-      const response = await fetch('/api/consultations', {
+      const apiEndpoint = activeTab === 'consultation' ? '/api/consultations' : '/api/practice-applications';
+      const response = await fetch(apiEndpoint, {
         method: 'DELETE',
         headers: {
           'Content-Type': 'application/json',
@@ -368,13 +424,13 @@ export default function AdminPage() {
       if (!response.ok) throw new Error('삭제 실패');
 
       setSelectedIds([]);
-      fetchConsultations();
+      fetchData();
     } catch (error) {
       alert('삭제에 실패했습니다.');
     }
   };
 
-  // 필터링
+  // 필터링 - consultations
   const filteredConsultations = consultations.filter(consultation => {
     // 탭 필터 - 현재 선택된 탭에 맞는 타입만 표시
     if (consultation.type !== activeTab) {
@@ -423,11 +479,48 @@ export default function AdminPage() {
     return true;
   });
 
+  // 필터링 - practice applications
+  const filteredPracticeApplications = practiceApplications.filter(practice => {
+    // 검색 텍스트 필터 (이름, 연락처, 메모)
+    if (searchText) {
+      const searchLower = searchText.toLowerCase();
+      const contactWithoutHyphen = practice.contact.replace(/-/g, '');
+      const searchWithoutHyphen = searchText.replace(/-/g, '');
+      const matchesSearch =
+        practice.student_name.toLowerCase().includes(searchLower) ||
+        contactWithoutHyphen.toLowerCase().includes(searchWithoutHyphen.toLowerCase()) ||
+        (practice.manager && practice.manager.toLowerCase().includes(searchLower)) ||
+        (practice.memo && practice.memo.toLowerCase().includes(searchLower));
+      if (!matchesSearch) return false;
+    }
+    // 날짜 필터
+    if (startDate || endDate) {
+      const applicationDate = new Date(practice.created_at);
+      if (startDate) {
+        const start = new Date(startDate);
+        start.setHours(0, 0, 0, 0);
+        if (applicationDate < start) return false;
+      }
+      if (endDate) {
+        const end = new Date(endDate);
+        end.setHours(23, 59, 59, 999);
+        if (applicationDate > end) return false;
+      }
+    }
+    return true;
+  });
+
   // 페이징 계산 (필터링된 데이터 기준)
-  const totalPages = Math.ceil(filteredConsultations.length / itemsPerPage);
+  const filteredData = activeTab === 'consultation' ? filteredConsultations : filteredPracticeApplications;
+  const totalPages = Math.ceil(filteredData.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
   const endIndex = startIndex + itemsPerPage;
-  const paginatedConsultations = filteredConsultations.slice(startIndex, endIndex);
+  const paginatedConsultations = activeTab === 'consultation'
+    ? filteredConsultations.slice(startIndex, endIndex)
+    : [];
+  const paginatedPracticeApplications = activeTab === 'practice'
+    ? filteredPracticeApplications.slice(startIndex, endIndex)
+    : [];
 
   const goToPage = (page: number) => {
     setCurrentPage(page);
@@ -717,68 +810,51 @@ export default function AdminPage() {
         <div className={styles.errorMessage}>{error}</div>
       ) : (
         <div className={styles.tableContainer}>
-          <table className={styles.table}>
-            <thead>
-              <tr>
-                <th className={styles.checkboxCell}>
-                  <input
-                    type="checkbox"
-                    checked={selectedIds.length === paginatedConsultations.length && paginatedConsultations.length > 0}
-                    onChange={toggleSelectAll}
-                  />
-                </th>
-                <th>이름</th>
-                <th>연락처</th>
-                <th>주소</th>
-                {activeTab === 'consultation' ? (
-                  <>
-                    <th>진행과정</th>
-                    <th>취업여부</th>
-                  </>
-                ) : (
-                  <>
-                    <th>실습처</th>
-                    <th>취업여부</th>
-                  </>
-                )}
-                <th>구법/신법</th>
-                <th>메모</th>
-                <th>신청일시</th>
-                <th>상태</th>
-              </tr>
-            </thead>
-            <tbody>
-              {paginatedConsultations.length === 0 ? (
+          {activeTab === 'consultation' ? (
+            <table className={styles.table}>
+              <thead>
                 <tr>
-                  <td colSpan={11} className={styles.empty}>
-                    신청 내역이 없습니다.
-                  </td>
+                  <th className={styles.checkboxCell}>
+                    <input
+                      type="checkbox"
+                      checked={selectedIds.length === paginatedConsultations.length && paginatedConsultations.length > 0}
+                      onChange={toggleSelectAll}
+                    />
+                  </th>
+                  <th>이름</th>
+                  <th>연락처</th>
+                  <th>주소</th>
+                  <th>진행과정</th>
+                  <th>취업여부</th>
+                  <th>구법/신법</th>
+                  <th>메모</th>
+                  <th>신청일시</th>
+                  <th>상태</th>
                 </tr>
-              ) : (
-                paginatedConsultations.map((consultation) => (
-                  <tr key={consultation.id} className={selectedIds.includes(consultation.id) ? styles.selectedRow : ''}>
-                    <td className={styles.checkboxCell}>
-                      <input
-                        type="checkbox"
-                        checked={selectedIds.includes(consultation.id)}
-                        onChange={() => toggleSelect(consultation.id)}
-                      />
+              </thead>
+              <tbody>
+                {paginatedConsultations.length === 0 ? (
+                  <tr>
+                    <td colSpan={10} className={styles.empty}>
+                      신청 내역이 없습니다.
                     </td>
-                    <td>{highlightText(consultation.name, searchText)}</td>
-                    <td>{highlightContact(consultation.contact, searchText)}</td>
-                    <td>{consultation.address || '-'}</td>
-                    {activeTab === 'consultation' ? (
-                      <>
-                        <td>{consultation.progress || '-'}</td>
-                        <td>{consultation.employment_after_cert || '-'}</td>
-                      </>
-                    ) : (
-                      <>
-                        <td>{consultation.practice_place || '-'}</td>
-                        <td>{consultation.employment_after_cert || '-'}</td>
-                      </>
-                    )}
-                    <td>
+                  </tr>
+                ) : (
+                  paginatedConsultations.map((consultation) => (
+                    <tr key={consultation.id} className={selectedIds.includes(consultation.id) ? styles.selectedRow : ''}>
+                      <td className={styles.checkboxCell}>
+                        <input
+                          type="checkbox"
+                          checked={selectedIds.includes(consultation.id)}
+                          onChange={() => toggleSelect(consultation.id)}
+                        />
+                      </td>
+                      <td>{highlightText(consultation.name, searchText)}</td>
+                      <td>{highlightContact(consultation.contact, searchText)}</td>
+                      <td>{consultation.address || '-'}</td>
+                      <td>{consultation.progress || '-'}</td>
+                      <td>{consultation.employment_after_cert || '-'}</td>
+                      <td>
                       <select
                         value={consultation.study_method || ''}
                         onChange={async (e) => {
@@ -833,6 +909,115 @@ export default function AdminPage() {
               )}
             </tbody>
           </table>
+          ) : (
+            <table className={styles.table}>
+              <thead>
+                <tr>
+                  <th className={styles.checkboxCell}>
+                    <input
+                      type="checkbox"
+                      checked={selectedIds.length === paginatedPracticeApplications.length && paginatedPracticeApplications.length > 0}
+                      onChange={toggleSelectAll}
+                    />
+                  </th>
+                  <th>이름</th>
+                  <th>성별</th>
+                  <th>연락처</th>
+                  <th>생년월일</th>
+                  <th>거주지역</th>
+                  <th>주소</th>
+                  <th>실습시작일</th>
+                  <th>성적표제출일</th>
+                  <th>선호학기</th>
+                  <th>실습유형</th>
+                  <th>선호요일</th>
+                  <th>차량여부</th>
+                  <th>현금영수증</th>
+                  <th>실습처</th>
+                  <th>유입경로</th>
+                  <th>메모</th>
+                  <th>신청일시</th>
+                  <th>상태</th>
+                </tr>
+              </thead>
+              <tbody>
+                {paginatedPracticeApplications.length === 0 ? (
+                  <tr>
+                    <td colSpan={19} className={styles.empty}>
+                      신청 내역이 없습니다.
+                    </td>
+                  </tr>
+                ) : (
+                  paginatedPracticeApplications.map((practice) => (
+                    <tr key={practice.id} className={selectedIds.includes(practice.id) ? styles.selectedRow : ''}>
+                      <td className={styles.checkboxCell}>
+                        <input
+                          type="checkbox"
+                          checked={selectedIds.includes(practice.id)}
+                          onChange={() => toggleSelect(practice.id)}
+                        />
+                      </td>
+                      <td>{highlightText(practice.student_name, searchText)}</td>
+                      <td>{practice.gender || '-'}</td>
+                      <td>{highlightContact(practice.contact, searchText)}</td>
+                      <td>{practice.birth_date || '-'}</td>
+                      <td>{practice.residence_area || '-'}</td>
+                      <td>{practice.address || '-'}</td>
+                      <td>{practice.practice_start_date || '-'}</td>
+                      <td>{practice.grade_report_date || '-'}</td>
+                      <td>{practice.preferred_semester || '-'}</td>
+                      <td>{practice.practice_type || '-'}</td>
+                      <td>{practice.preferred_days || '-'}</td>
+                      <td>{practice.has_car ? 'O' : 'X'}</td>
+                      <td>{practice.cash_receipt_number || '-'}</td>
+                      <td>{practice.practice_place || '-'}</td>
+                      <td>{practice.click_source || '-'}</td>
+                      <td>
+                        <div
+                          className={`${styles.memoCell} ${!practice.memo ? styles.empty : ''}`}
+                          onClick={() => {
+                            setSelectedPractice(practice);
+                            setMemoText(practice.memo || '');
+                            setShowMemoModal(true);
+                          }}
+                          title={practice.memo || '메모 추가...'}
+                        >
+                          {practice.memo ? highlightText(practice.memo, searchText) : '메모 추가...'}
+                        </div>
+                      </td>
+                      <td>{formatDate(practice.created_at)}</td>
+                      <td>
+                        <select
+                          value={practice.status || 'pending'}
+                          onChange={async (e) => {
+                            try {
+                              const response = await fetch('/api/practice-applications', {
+                                method: 'PATCH',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({
+                                  id: practice.id,
+                                  status: e.target.value
+                                }),
+                              });
+                              if (!response.ok) throw new Error('업데이트 실패');
+                              fetchData();
+                            } catch (error) {
+                              alert('상태 변경에 실패했습니다.');
+                            }
+                          }}
+                          className={`${styles.statusSelect} ${styles[`status${practice.status || 'pending'}`]}`}
+                        >
+                          <option value="pending">대기</option>
+                          <option value="in_progress">진행중</option>
+                          <option value="completed">완료</option>
+                        </select>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          )}
 
           {/* 페이징 */}
           {totalPages > 1 && (
