@@ -67,10 +67,33 @@ interface PracticeApplication {
   updated_at: string;
 }
 
+interface EmploymentApplication {
+  id: string;
+  name: string;
+  gender: string | null;
+  contact: string;
+  birth_date: string | null;
+  address: string | null;
+  address_detail: string | null;
+  desired_job_field: string | null;
+  employment_types: string[];
+  has_resume: boolean | null;
+  certifications: string | null;
+  payment_amount: number;
+  payment_status: string;
+  payment_id: string | null;
+  privacy_agreed: boolean;
+  terms_agreed: boolean;
+  click_source: string | null;
+  status: string;
+  created_at: string;
+}
+
 export default function AdminPage() {
-  const [activeTab, setActiveTab] = useState<'consultation' | 'practice' | '취업연계'>('consultation');
+  const [activeTab, setActiveTab] = useState<'consultation' | 'practice' | '취업연계' | 'employment'>('consultation');
   const [consultations, setConsultations] = useState<Consultation[]>([]);
   const [practiceApplications, setPracticeApplications] = useState<PracticeApplication[]>([]);
+  const [employmentApplications, setEmploymentApplications] = useState<EmploymentApplication[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [showAddModal, setShowAddModal] = useState(false);
@@ -153,13 +176,20 @@ export default function AdminPage() {
         }));
 
         setConsultations(consultationsWithStatus);
-      } else {
+      } else if (activeTab === 'practice') {
         const response = await fetch('/api/practice-applications');
         if (!response.ok) {
           throw new Error('실습섭외신청서 목록을 불러오는데 실패했습니다.');
         }
         const data = await response.json();
         setPracticeApplications(data || []);
+      } else if (activeTab === 'employment') {
+        const response = await fetch('/api/employment-applications');
+        if (!response.ok) {
+          throw new Error('취업신청 목록을 불러오는데 실패했습니다.');
+        }
+        const data = await response.json();
+        setEmploymentApplications(data || []);
       }
     } catch (error: any) {
       setError(error.message || '데이터를 불러오는데 실패했습니다.');
@@ -388,7 +418,11 @@ export default function AdminPage() {
 
   // 체크박스 관련 함수
   const toggleSelectAll = () => {
-    const currentPageData = activeTab === 'practice' ? paginatedPracticeApplications : paginatedConsultations;
+    const currentPageData = activeTab === 'practice'
+      ? paginatedPracticeApplications
+      : activeTab === 'employment'
+      ? paginatedEmploymentApplications
+      : paginatedConsultations;
     if (selectedIds.length === currentPageData.length) {
       setSelectedIds([]);
     } else {
@@ -416,7 +450,11 @@ export default function AdminPage() {
     }
 
     try {
-      const apiEndpoint = activeTab === 'practice' ? '/api/practice-applications' : '/api/consultations';
+      const apiEndpoint = activeTab === 'practice'
+        ? '/api/practice-applications'
+        : activeTab === 'employment'
+        ? '/api/employment-applications'
+        : '/api/consultations';
       const response = await fetch(apiEndpoint, {
         method: 'DELETE',
         headers: {
@@ -513,16 +551,50 @@ export default function AdminPage() {
     return true;
   });
 
+  // 필터링 - employment applications
+  const filteredEmploymentApplications = employmentApplications.filter(emp => {
+    if (searchText) {
+      const searchLower = searchText.toLowerCase();
+      const contactWithoutHyphen = emp.contact.replace(/-/g, '');
+      const searchWithoutHyphen = searchText.replace(/-/g, '');
+      const matchesSearch =
+        emp.name.toLowerCase().includes(searchLower) ||
+        contactWithoutHyphen.toLowerCase().includes(searchWithoutHyphen.toLowerCase());
+      if (!matchesSearch) return false;
+    }
+    if (startDate || endDate) {
+      const applicationDate = new Date(emp.created_at);
+      if (startDate) {
+        const start = new Date(startDate);
+        start.setHours(0, 0, 0, 0);
+        if (applicationDate < start) return false;
+      }
+      if (endDate) {
+        const end = new Date(endDate);
+        end.setHours(23, 59, 59, 999);
+        if (applicationDate > end) return false;
+      }
+    }
+    return true;
+  });
+
   // 페이징 계산 (필터링된 데이터 기준)
-  const filteredData = activeTab === 'practice' ? filteredPracticeApplications : filteredConsultations;
+  const filteredData = activeTab === 'practice'
+    ? filteredPracticeApplications
+    : activeTab === 'employment'
+    ? filteredEmploymentApplications
+    : filteredConsultations;
   const totalPages = Math.ceil(filteredData.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
   const endIndex = startIndex + itemsPerPage;
-  const paginatedConsultations = activeTab !== 'practice'
+  const paginatedConsultations = activeTab !== 'practice' && activeTab !== 'employment'
     ? filteredConsultations.slice(startIndex, endIndex)
     : [];
   const paginatedPracticeApplications = activeTab === 'practice'
     ? filteredPracticeApplications.slice(startIndex, endIndex)
+    : [];
+  const paginatedEmploymentApplications = activeTab === 'employment'
+    ? filteredEmploymentApplications.slice(startIndex, endIndex)
     : [];
 
   const goToPage = (page: number) => {
@@ -676,6 +748,16 @@ export default function AdminPage() {
           >
             실습섭외신청서
           </button>
+          <button
+            onClick={() => {
+              setActiveTab('employment');
+              setCurrentPage(1);
+              setSelectedIds([]);
+            }}
+            className={`${styles.tabButton} ${activeTab === 'employment' ? styles.tabButtonActive : ''}`}
+          >
+            취업신청
+          </button>
         </div>
         <div className={styles.tabActions}>
           <button onClick={fetchConsultations} className={styles.refreshButton}>
@@ -690,7 +772,7 @@ export default function AdminPage() {
       {/* 제목 및 카운트 */}
       <div className={styles.titleSection}>
         <h1 className={styles.title}>
-          {activeTab === 'consultation' ? '무료 상담신청' : activeTab === '취업연계' ? '취업연계' : '실습섭외신청서'} 관리
+          {activeTab === 'consultation' ? '무료 상담신청' : activeTab === '취업연계' ? '취업연계' : activeTab === 'practice' ? '실습섭외신청서' : '취업신청'} 관리
         </h1>
         <span className={styles.count}>{filteredData.length}건</span>
       </div>
@@ -1115,6 +1197,105 @@ export default function AdminPage() {
                             }
                           }}
                           className={`${styles.statusSelect} ${styles[`status${practice.status || 'pending'}`]}`}
+                        >
+                          <option value="pending">대기</option>
+                          <option value="confirmed">확정</option>
+                          <option value="in_progress">진행중</option>
+                          <option value="completed">완료</option>
+                        </select>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          )}
+
+          {/* 취업신청 탭 */}
+          {activeTab === 'employment' && (
+            <table className={styles.table}>
+              <thead>
+                <tr>
+                  <th className={styles.checkboxCell}>
+                    <input
+                      type="checkbox"
+                      checked={selectedIds.length === paginatedEmploymentApplications.length && paginatedEmploymentApplications.length > 0}
+                      onChange={toggleSelectAll}
+                    />
+                  </th>
+                  <th>이름</th>
+                  <th>성별</th>
+                  <th>연락처</th>
+                  <th>생년월일</th>
+                  <th>주소</th>
+                  <th>취업희망분야</th>
+                  <th>고용형태</th>
+                  <th>이력서</th>
+                  <th>자격증</th>
+                  <th>결제금액</th>
+                  <th>결제상태</th>
+                  <th>유입경로</th>
+                  <th>신청일시</th>
+                  <th>상태</th>
+                </tr>
+              </thead>
+              <tbody>
+                {paginatedEmploymentApplications.length === 0 ? (
+                  <tr>
+                    <td colSpan={15} className={styles.empty}>
+                      신청 내역이 없습니다.
+                    </td>
+                  </tr>
+                ) : (
+                  paginatedEmploymentApplications.map((emp) => (
+                    <tr key={emp.id} className={selectedIds.includes(emp.id) ? styles.selectedRow : ''}>
+                      <td className={styles.checkboxCell}>
+                        <input
+                          type="checkbox"
+                          checked={selectedIds.includes(emp.id)}
+                          onChange={() => toggleSelect(emp.id)}
+                        />
+                      </td>
+                      <td>{highlightText(emp.name, searchText)}</td>
+                      <td>{emp.gender || '-'}</td>
+                      <td>{highlightContact(emp.contact, searchText)}</td>
+                      <td>{emp.birth_date || '-'}</td>
+                      <td>
+                        {[emp.address, emp.address_detail].filter(Boolean).join(' ') || '-'}
+                      </td>
+                      <td>{emp.desired_job_field || '-'}</td>
+                      <td>{Array.isArray(emp.employment_types) ? emp.employment_types.join(', ') : '-'}</td>
+                      <td>{emp.has_resume === true ? '보유' : emp.has_resume === false ? '미보유' : '-'}</td>
+                      <td>{emp.certifications || '-'}</td>
+                      <td>{emp.payment_amount ? `${emp.payment_amount.toLocaleString()}원` : '-'}</td>
+                      <td>
+                        <span className={`${styles.paymentBadge} ${styles[`payment_${emp.payment_status || 'pending'}`]}`}>
+                          {emp.payment_status === 'paid' ? '결제완료'
+                            : emp.payment_status === 'requested' ? '요청됨'
+                            : emp.payment_status === 'failed' ? '실패'
+                            : emp.payment_status === 'confirmed' ? '확정'
+                            : '대기'}
+                        </span>
+                      </td>
+                      <td>{emp.click_source || '-'}</td>
+                      <td>{formatDate(emp.created_at)}</td>
+                      <td>
+                        <select
+                          value={emp.status || 'pending'}
+                          onChange={async (e) => {
+                            try {
+                              const response = await fetch('/api/employment-applications', {
+                                method: 'PATCH',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ id: emp.id, status: e.target.value }),
+                              });
+                              if (!response.ok) throw new Error('업데이트 실패');
+                              fetchData();
+                            } catch (error) {
+                              alert('상태 변경에 실패했습니다.');
+                            }
+                          }}
+                          className={`${styles.statusSelect} ${styles[`status${emp.status || 'pending'}`]}`}
                         >
                           <option value="pending">대기</option>
                           <option value="confirmed">확정</option>
