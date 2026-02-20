@@ -7,7 +7,7 @@ import styles from './admin.module.css';
 
 type ConsultationStatus = '상담대기' | '상담중' | '실습처배정' | '취업처연계' | '완료';
 type PracticeStatus = 'pending' | 'in_progress' | 'completed';
-type FormType = 'consultation' | 'practice';
+type FormType = 'consultation' | 'practice' | '취업연계';
 type StudentStatus = '상담대기' | '상담중' | '실습처배정' | '취업처연계완료';
 type StudyMethod = '구법' | '신법' | '구법+신법';
 
@@ -34,6 +34,12 @@ interface Consultation {
   study_method: StudyMethod | null;
   address: string | null;
   created_at: string;
+  // 취업연계 필드
+  service_practice: boolean;
+  service_employment: boolean;
+  practice_planned_date: string | null;
+  employment_hope_time: string | null;
+  employment_support_fund: boolean | null;
 }
 
 interface PracticeApplication {
@@ -64,7 +70,7 @@ interface PracticeApplication {
 }
 
 export default function AdminPage() {
-  const [activeTab, setActiveTab] = useState<'consultation' | 'practice'>('consultation');
+  const [activeTab, setActiveTab] = useState<'consultation' | 'practice' | '취업연계'>('consultation');
   const [consultations, setConsultations] = useState<Consultation[]>([]);
   const [practiceApplications, setPracticeApplications] = useState<PracticeApplication[]>([]);
   const [loading, setLoading] = useState(true);
@@ -135,7 +141,7 @@ export default function AdminPage() {
   const fetchData = async () => {
     setLoading(true);
     try {
-      if (activeTab === 'consultation') {
+      if (activeTab === 'consultation' || activeTab === '취업연계') {
         const response = await fetch('/api/consultations');
         if (!response.ok) {
           throw new Error('상담 신청 목록을 불러오는데 실패했습니다.');
@@ -226,7 +232,7 @@ export default function AdminPage() {
     if (!selectedConsultation && !selectedPractice) return;
 
     try {
-      const apiEndpoint = activeTab === 'consultation' ? '/api/consultations' : '/api/practice-applications';
+      const apiEndpoint = activeTab === 'practice' ? '/api/practice-applications' : '/api/consultations';
       const id = selectedConsultation?.id || selectedPractice?.id;
 
       const response = await fetch(apiEndpoint, {
@@ -384,7 +390,7 @@ export default function AdminPage() {
 
   // 체크박스 관련 함수
   const toggleSelectAll = () => {
-    const currentPageData = activeTab === 'consultation' ? paginatedConsultations : paginatedPracticeApplications;
+    const currentPageData = activeTab === 'practice' ? paginatedPracticeApplications : paginatedConsultations;
     if (selectedIds.length === currentPageData.length) {
       setSelectedIds([]);
     } else {
@@ -412,7 +418,7 @@ export default function AdminPage() {
     }
 
     try {
-      const apiEndpoint = activeTab === 'consultation' ? '/api/consultations' : '/api/practice-applications';
+      const apiEndpoint = activeTab === 'practice' ? '/api/practice-applications' : '/api/consultations';
       const response = await fetch(apiEndpoint, {
         method: 'DELETE',
         headers: {
@@ -511,11 +517,11 @@ export default function AdminPage() {
   });
 
   // 페이징 계산 (필터링된 데이터 기준)
-  const filteredData = activeTab === 'consultation' ? filteredConsultations : filteredPracticeApplications;
+  const filteredData = activeTab === 'practice' ? filteredPracticeApplications : filteredConsultations;
   const totalPages = Math.ceil(filteredData.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
   const endIndex = startIndex + itemsPerPage;
-  const paginatedConsultations = activeTab === 'consultation'
+  const paginatedConsultations = activeTab !== 'practice'
     ? filteredConsultations.slice(startIndex, endIndex)
     : [];
   const paginatedPracticeApplications = activeTab === 'practice'
@@ -530,10 +536,10 @@ export default function AdminPage() {
   // 검색어 하이라이트 함수
   const highlightText = (text: string | null | undefined, query: string) => {
     if (!text || !query) return text || '';
-    
+
     const parts = text.split(new RegExp(`(${query})`, 'gi'));
-    return parts.map((part, index) => 
-      part.toLowerCase() === query.toLowerCase() 
+    return parts.map((part, index) =>
+      part.toLowerCase() === query.toLowerCase()
         ? <span key={index} className={styles.highlight}>{part}</span>
         : part
     );
@@ -542,28 +548,28 @@ export default function AdminPage() {
   // 연락처 하이라이트 함수 (하이픈 무시)
   const highlightContact = (contact: string, query: string) => {
     if (!query) return contact;
-    
+
     // 검색어에 하이픈이 포함되어 있으면 일반 하이라이트 사용
     if (query.includes('-')) {
       return highlightText(contact, query);
     }
-    
+
     // 검색어에서 숫자만 추출
     const searchNumbers = query.replace(/[^0-9]/g, '');
     if (searchNumbers.length < 3) return contact;
-    
+
     // 연락처를 숫자만 추출
     const contactNumbers = contact.replace(/-/g, '');
-    
+
     // 검색어가 포함되어 있는지 확인
     const matchIndex = contactNumbers.toLowerCase().indexOf(searchNumbers.toLowerCase());
     if (matchIndex === -1) return contact;
-    
+
     // 하이픈 포함한 원본에서 매칭 위치 찾기
     let currentNumberIndex = 0;
     let startPos = -1;
     let endPos = -1;
-    
+
     for (let i = 0; i < contact.length; i++) {
       if (contact[i] !== '-') {
         if (currentNumberIndex === matchIndex && startPos === -1) {
@@ -576,9 +582,9 @@ export default function AdminPage() {
         currentNumberIndex++;
       }
     }
-    
+
     if (startPos === -1 || endPos === -1) return contact;
-    
+
     // 하이라이트 적용
     return (
       <>
@@ -592,7 +598,7 @@ export default function AdminPage() {
   // 엑셀 다운로드 함수
   const handleExcelDownload = () => {
     // 선택된 항목이 있으면 선택된 것만, 없으면 필터링된 전체 다운로드
-    const dataToDownload = selectedIds.length > 0 
+    const dataToDownload = selectedIds.length > 0
       ? consultations.filter(c => selectedIds.includes(c.id))
       : filteredConsultations;
 
@@ -624,11 +630,11 @@ export default function AdminPage() {
     const blob = new Blob([BOM + csvContent], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement('a');
     const url = URL.createObjectURL(blob);
-    
-    const fileName = selectedIds.length > 0 
+
+    const fileName = selectedIds.length > 0
       ? `상담신청_선택${selectedIds.length}건_${new Date().toISOString().split('T')[0]}.csv`
       : `상담신청_${new Date().toISOString().split('T')[0]}.csv`;
-    
+
     link.setAttribute('href', url);
     link.setAttribute('download', fileName);
     link.style.visibility = 'hidden';
@@ -655,6 +661,16 @@ export default function AdminPage() {
           </button>
           <button
             onClick={() => {
+              setActiveTab('취업연계');
+              setCurrentPage(1);
+              setSelectedIds([]);
+            }}
+            className={`${styles.tabButton} ${activeTab === '취업연계' ? styles.tabButtonActive : ''}`}
+          >
+            취업연계
+          </button>
+          <button
+            onClick={() => {
               setActiveTab('practice');
               setCurrentPage(1);
               setSelectedIds([]);
@@ -677,9 +693,9 @@ export default function AdminPage() {
       {/* 제목 및 카운트 */}
       <div className={styles.titleSection}>
         <h1 className={styles.title}>
-          {activeTab === 'consultation' ? '무료 상담신청' : '실습섭외신청서'} 관리
+          {activeTab === 'consultation' ? '무료 상담신청' : activeTab === '취업연계' ? '취업연계' : '실습섭외신청서'} 관리
         </h1>
-        <span className={styles.count}>{filteredConsultations.length}건</span>
+        <span className={styles.count}>{filteredData.length}건</span>
       </div>
 
       {/* 필터 및 액션 영역 */}
@@ -740,6 +756,7 @@ export default function AdminPage() {
             >
               <option value="all">전체 폼타입</option>
               <option value="consultation">상담신청</option>
+              <option value="취업연계">취업연계</option>
               <option value="practice">실습신청서</option>
             </select>
 
@@ -810,7 +827,8 @@ export default function AdminPage() {
         <div className={styles.errorMessage}>{error}</div>
       ) : (
         <div className={styles.tableContainer}>
-          {activeTab === 'consultation' ? (
+          {/* 무료 상담신청 탭 */}
+          {activeTab === 'consultation' && (
             <table className={styles.table}>
               <thead>
                 <tr>
@@ -855,61 +873,152 @@ export default function AdminPage() {
                       <td>{consultation.progress || '-'}</td>
                       <td>{consultation.employment_after_cert || '-'}</td>
                       <td>
-                      <select
-                        value={consultation.study_method || ''}
-                        onChange={async (e) => {
-                          try {
-                            const response = await fetch('/api/consultations', {
-                              method: 'PATCH',
-                              headers: { 'Content-Type': 'application/json' },
-                              body: JSON.stringify({
-                                id: consultation.id,
-                                study_method: e.target.value || null
-                              }),
-                            });
-                            if (!response.ok) throw new Error('업데이트 실패');
-                            fetchConsultations();
-                          } catch (error) {
-                            alert('구법/신법 변경에 실패했습니다.');
-                          }
-                        }}
-                        className={`${styles.studyMethodSelect} ${consultation.study_method ? styles[`studyMethod${consultation.study_method.replace(/\+/g, 'Plus')}`] : ''}`}
-                      >
-                        <option value="">선택</option>
-                        <option value="구법">구법</option>
-                        <option value="신법">신법</option>
-                        <option value="구법+신법">구법+신법</option>
-                      </select>
-                    </td>
-                    <td>
-                      <div
-                        className={`${styles.memoCell} ${!consultation.memo ? styles.empty : ''}`}
-                        onClick={() => openMemoModal(consultation)}
-                        title={consultation.memo || '메모 추가...'}
-                      >
-                        {consultation.memo ? highlightText(consultation.memo, searchText) : '메모 추가...'}
-                      </div>
-                    </td>
-                    <td>{formatDate(consultation.created_at)}</td>
-                    <td>
-                      <select
-                        value={consultation.status || '상담대기'}
-                        onChange={(e) => handleStatusChange(consultation.id, e.target.value as ConsultationStatus)}
-                        className={`${styles.statusSelect} ${styles[`status${(consultation.status || '상담대기').replace(/\s/g, '')}`]}`}
-                      >
-                        <option value="상담대기">상담대기</option>
-                        <option value="상담중">상담중</option>
-                        <option value="실습처배정">실습처배정</option>
-                        <option value="취업처연계">취업처연계</option>
-                        <option value="완료">완료</option>
-                      </select>
+                        <select
+                          value={consultation.study_method || ''}
+                          onChange={async (e) => {
+                            try {
+                              const response = await fetch('/api/consultations', {
+                                method: 'PATCH',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({
+                                  id: consultation.id,
+                                  study_method: e.target.value || null
+                                }),
+                              });
+                              if (!response.ok) throw new Error('업데이트 실패');
+                              fetchConsultations();
+                            } catch (error) {
+                              alert('구법/신법 변경에 실패했습니다.');
+                            }
+                          }}
+                          className={`${styles.studyMethodSelect} ${consultation.study_method ? styles[`studyMethod${consultation.study_method.replace(/\+/g, 'Plus')}`] : ''}`}
+                        >
+                          <option value="">선택</option>
+                          <option value="구법">구법</option>
+                          <option value="신법">신법</option>
+                          <option value="구법+신법">구법+신법</option>
+                        </select>
+                      </td>
+                      <td>
+                        <div
+                          className={`${styles.memoCell} ${!consultation.memo ? styles.empty : ''}`}
+                          onClick={() => openMemoModal(consultation)}
+                          title={consultation.memo || '메모 추가...'}
+                        >
+                          {consultation.memo ? highlightText(consultation.memo, searchText) : '메모 추가...'}
+                        </div>
+                      </td>
+                      <td>{formatDate(consultation.created_at)}</td>
+                      <td>
+                        <select
+                          value={consultation.status || '상담대기'}
+                          onChange={(e) => handleStatusChange(consultation.id, e.target.value as ConsultationStatus)}
+                          className={`${styles.statusSelect} ${styles[`status${(consultation.status || '상담대기').replace(/\s/g, '')}`]}`}
+                        >
+                          <option value="상담대기">상담대기</option>
+                          <option value="상담중">상담중</option>
+                          <option value="실습처배정">실습처배정</option>
+                          <option value="취업처연계">취업처연계</option>
+                          <option value="완료">완료</option>
+                        </select>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          )}
+
+          {/* 취업연계 탭 */}
+          {activeTab === '취업연계' && (
+            <table className={styles.table}>
+              <thead>
+                <tr>
+                  <th className={styles.checkboxCell}>
+                    <input
+                      type="checkbox"
+                      checked={selectedIds.length === paginatedConsultations.length && paginatedConsultations.length > 0}
+                      onChange={toggleSelectAll}
+                    />
+                  </th>
+                  <th>이름</th>
+                  <th>연락처</th>
+                  <th>희망서비스</th>
+                  <th>실습예정일</th>
+                  <th>취업 희망 시기</th>
+                  <th>취업지원금</th>
+                  <th>유입경로</th>
+                  <th>메모</th>
+                  <th>신청일시</th>
+                  <th>상태</th>
+                </tr>
+              </thead>
+              <tbody>
+                {paginatedConsultations.length === 0 ? (
+                  <tr>
+                    <td colSpan={11} className={styles.empty}>
+                      신청 내역이 없습니다.
                     </td>
                   </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-          ) : (
+                ) : (
+                  paginatedConsultations.map((consultation) => (
+                    <tr key={consultation.id} className={selectedIds.includes(consultation.id) ? styles.selectedRow : ''}>
+                      <td className={styles.checkboxCell}>
+                        <input
+                          type="checkbox"
+                          checked={selectedIds.includes(consultation.id)}
+                          onChange={() => toggleSelect(consultation.id)}
+                        />
+                      </td>
+                      <td>{highlightText(consultation.name, searchText)}</td>
+                      <td>{highlightContact(consultation.contact, searchText)}</td>
+                      <td>
+                        {[
+                          consultation.service_practice && '실습',
+                          consultation.service_employment && '취업'
+                        ].filter(Boolean).join(', ') || '-'}
+                      </td>
+                      <td>{consultation.practice_planned_date || '-'}</td>
+                      <td>{consultation.employment_hope_time || '-'}</td>
+                      <td>
+                        {consultation.employment_support_fund === true
+                          ? '희망함'
+                          : consultation.employment_support_fund === false
+                          ? '희망하지 않음'
+                          : '-'}
+                      </td>
+                      <td>{consultation.click_source || '-'}</td>
+                      <td>
+                        <div
+                          className={`${styles.memoCell} ${!consultation.memo ? styles.empty : ''}`}
+                          onClick={() => openMemoModal(consultation)}
+                          title={consultation.memo || '메모 추가...'}
+                        >
+                          {consultation.memo ? highlightText(consultation.memo, searchText) : '메모 추가...'}
+                        </div>
+                      </td>
+                      <td>{formatDate(consultation.created_at)}</td>
+                      <td>
+                        <select
+                          value={consultation.status || '상담대기'}
+                          onChange={(e) => handleStatusChange(consultation.id, e.target.value as ConsultationStatus)}
+                          className={`${styles.statusSelect} ${styles[`status${(consultation.status || '상담대기').replace(/\s/g, '')}`]}`}
+                        >
+                          <option value="상담대기">상담대기</option>
+                          <option value="상담중">상담중</option>
+                          <option value="취업처연계">취업처연계</option>
+                          <option value="완료">완료</option>
+                        </select>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          )}
+
+          {/* 실습섭외신청서 탭 */}
+          {activeTab === 'practice' && (
             <table className={styles.table}>
               <thead>
                 <tr>
@@ -1098,6 +1207,7 @@ export default function AdminPage() {
                   onChange={(e) => setFormData({ ...formData, type: e.target.value as FormType })}
                 >
                   <option value="consultation">상담신청</option>
+                  <option value="취업연계">취업연계</option>
                   <option value="practice">실습신청서</option>
                 </select>
               </div>
@@ -1242,7 +1352,6 @@ export default function AdminPage() {
                 />
               </div>
 
-              {/* 새로운 필드들 */}
               <div className={styles.formGroup}>
                 <label>폼 타입</label>
                 <select
@@ -1250,6 +1359,7 @@ export default function AdminPage() {
                   onChange={(e) => setFormData({ ...formData, type: e.target.value as FormType })}
                 >
                   <option value="consultation">상담신청</option>
+                  <option value="취업연계">취업연계</option>
                   <option value="practice">실습신청서</option>
                 </select>
               </div>
@@ -1354,7 +1464,6 @@ export default function AdminPage() {
         </div>
       )}
 
-      {/* 거주지 수정 모달 */}
       {/* 메모 편집 모달 */}
       {showMemoModal && selectedConsultation && (
         <div className={styles.modalOverlay} onClick={closeMemoModal}>
