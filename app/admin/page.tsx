@@ -1182,21 +1182,63 @@ export default function AdminPage() {
                       <td>{formatDate(practice.created_at)}</td>
                       <td>
                         <select
-                          value={practice.status || 'pending'}
+                          value={practice.status || 'completed'}
                           onChange={async (e) => {
+                            const newStatus = e.target.value;
                             try {
-                              const response = await fetch('/api/practice-applications', {
-                                method: 'PATCH',
-                                headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify({ id: practice.id, status: e.target.value }),
-                              });
-                              if (!response.ok) throw new Error('업데이트 실패');
+                              // 확정 시 취업신청으로 이동 (복사 후 원본 삭제)
+                              if (newStatus === 'confirmed') {
+                                const empResponse = await fetch('/api/employment-applications', {
+                                  method: 'POST',
+                                  headers: { 'Content-Type': 'application/json' },
+                                  body: JSON.stringify({
+                                    name: practice.name,
+                                    gender: practice.gender,
+                                    contact: practice.contact,
+                                    birth_date: practice.birth_date,
+                                    address: practice.address,
+                                    address_detail: practice.address_detail,
+                                    desired_job_field: practice.desired_job_field,
+                                    employment_types: practice.employment_types,
+                                    has_resume: practice.has_resume,
+                                    certifications: practice.certifications,
+                                    payment_amount: practice.payment_amount,
+                                    payment_status: practice.payment_status,
+                                    payment_id: practice.payment_id,
+                                    privacy_agreed: practice.privacy_agreed,
+                                    terms_agreed: practice.terms_agreed,
+                                    click_source: practice.click_source || '실습섭외신청',
+                                    status: 'pending',
+                                  }),
+                                });
+                                if (!empResponse.ok) {
+                                  alert('취업신청 이동에 실패했습니다.');
+                                  return;
+                                }
+                                // 원본 실습섭외 신청서 삭제
+                                const deleteResponse = await fetch('/api/practice-applications', {
+                                  method: 'DELETE',
+                                  headers: { 'Content-Type': 'application/json' },
+                                  body: JSON.stringify({ ids: [practice.id] }),
+                                });
+                                if (!deleteResponse.ok) {
+                                  alert('이동은 완료됐으나 원본 삭제에 실패했습니다.');
+                                }
+                              } else {
+                                const response = await fetch('/api/practice-applications', {
+                                  method: 'PATCH',
+                                  headers: { 'Content-Type': 'application/json' },
+                                  body: JSON.stringify({ id: practice.id, status: newStatus }),
+                                });
+                                if (!response.ok) throw new Error('업데이트 실패');
+                              }
+
                               fetchData();
                             } catch (error) {
                               alert('상태 변경에 실패했습니다.');
                             }
                           }}
-                          className={`${styles.statusSelect} ${styles[`status${practice.status || 'pending'}`]}`}
+                          className={`${styles.statusSelect} ${styles[`status${practice.status || 'completed'}`]}`}
                         >
                           <option value="pending">대기</option>
                           <option value="confirmed">확정</option>

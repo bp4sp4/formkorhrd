@@ -105,7 +105,7 @@ export async function POST(request: NextRequest) {
           privacy_agreed: privacy_agreed || false,
           practice_place: practice_place || null,
           click_source: click_source || null,
-          status: 'pending', // 기본 상태
+          status: 'completed', // 기본 상태
         },
       ])
       .select()

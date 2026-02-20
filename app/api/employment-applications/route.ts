@@ -39,6 +39,94 @@ export async function GET() {
   }
 }
 
+// POST: 취업신청 생성 (실습섭외 확정 시 자동 생성)
+export async function POST(request: NextRequest) {
+  try {
+    if (
+      !process.env.NEXT_PUBLIC_SUPABASE_URL ||
+      !process.env.SUPABASE_SERVICE_ROLE_KEY
+    ) {
+      return NextResponse.json(
+        { error: 'Supabase configuration missing' },
+        { status: 500 }
+      );
+    }
+
+    const body = await request.json();
+    const {
+      name,
+      gender,
+      contact,
+      birth_date,
+      address,
+      address_detail,
+      desired_job_field,
+      employment_types,
+      has_resume,
+      certifications,
+      payment_amount,
+      payment_status,
+      payment_id,
+      privacy_agreed,
+      terms_agreed,
+      click_source,
+      status,
+    } = body;
+
+    if (!name || !contact) {
+      return NextResponse.json(
+        { error: 'Name and contact are required' },
+        { status: 400 }
+      );
+    }
+
+    const { data, error } = await supabaseAdmin
+      .from('employment_applications')
+      .insert([
+        {
+          name,
+          gender: gender || null,
+          contact,
+          birth_date: birth_date || null,
+          address: address || null,
+          address_detail: address_detail || null,
+          desired_job_field: desired_job_field || null,
+          employment_types: employment_types || [],
+          has_resume: has_resume ?? null,
+          certifications: certifications || null,
+          payment_amount: payment_amount || null,
+          payment_status: payment_status || 'pending',
+          payment_id: payment_id || null,
+          privacy_agreed: privacy_agreed || false,
+          terms_agreed: terms_agreed || false,
+          click_source: click_source || null,
+          status: status || 'pending',
+        },
+      ])
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Error creating employment application:', error);
+      return NextResponse.json(
+        { error: 'Failed to create employment application' },
+        { status: 500 }
+      );
+    }
+
+    return NextResponse.json(
+      { message: 'Employment application created successfully', data },
+      { status: 201 }
+    );
+  } catch (error) {
+    console.error('Error creating employment application:', error);
+    return NextResponse.json(
+      { error: 'Failed to create employment application' },
+      { status: 500 }
+    );
+  }
+}
+
 // PATCH: 상태/메모 업데이트
 export async function PATCH(request: NextRequest) {
   try {
