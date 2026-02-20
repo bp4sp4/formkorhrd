@@ -929,3 +929,38 @@
 .cancelButton:hover {
   background: #e5e8eb;
 }
+
+/* 결제상태 뱃지 */
+.paymentBadge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.payment_pending {
+  background: #f2f4f6;
+  color: #6b7280;
+}
+
+.payment_requested {
+  background: #fff3cd;
+  color: #92671a;
+}
+
+.payment_paid {
+  background: #d1fae5;
+  color: #065f46;
+}
+
+.payment_failed {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.payment_confirmed {
+  background: #dbeafe;
+  color: #1e40af;
+}

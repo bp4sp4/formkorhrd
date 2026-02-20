@@ -6,7 +6,6 @@ import { supabase } from '@/lib/supabase';
 import styles from './admin.module.css';
 
 type ConsultationStatus = '상담대기' | '상담중' | '실습처배정' | '취업처연계' | '완료';
-type PracticeStatus = 'pending' | 'in_progress' | 'completed';
 type FormType = 'consultation' | 'practice' | '취업연계';
 type StudentStatus = '상담대기' | '상담중' | '실습처배정' | '취업처연계완료';
 type StudyMethod = '구법' | '신법' | '구법+신법';
@@ -44,27 +43,26 @@ interface Consultation {
 
 interface PracticeApplication {
   id: string;
-  student_name: string;
+  name: string;
   gender: string | null;
   contact: string;
   birth_date: string | null;
-  residence_area: string | null;
   address: string | null;
-  practice_start_date: string | null;
-  grade_report_date: string | null;
-  preferred_semester: string | null;
+  address_detail: string | null;
   practice_type: string | null;
-  preferred_days: string | null;
-  has_car: boolean;
-  cash_receipt_number: string | null;
+  desired_job_field: string | null;
+  employment_types: string[];
+  has_resume: boolean | null;
+  certifications: string | null;
+  payment_amount: number;
+  payment_status: string;
+  payment_id: string | null;
   privacy_agreed: boolean;
-  status: PracticeStatus;
-  memo: string | null;
-  notes: string | null;
-  is_completed: boolean;
-  manager: string | null;
+  terms_agreed: boolean;
   click_source: string | null;
-  practice_place: string | null;
+  status: string;
+  memo: string | null;
+  manager: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -487,13 +485,12 @@ export default function AdminPage() {
 
   // 필터링 - practice applications
   const filteredPracticeApplications = practiceApplications.filter(practice => {
-    // 검색 텍스트 필터 (이름, 연락처, 메모)
     if (searchText) {
       const searchLower = searchText.toLowerCase();
       const contactWithoutHyphen = practice.contact.replace(/-/g, '');
       const searchWithoutHyphen = searchText.replace(/-/g, '');
       const matchesSearch =
-        practice.student_name.toLowerCase().includes(searchLower) ||
+        practice.name.toLowerCase().includes(searchLower) ||
         contactWithoutHyphen.toLowerCase().includes(searchWithoutHyphen.toLowerCase()) ||
         (practice.manager && practice.manager.toLowerCase().includes(searchLower)) ||
         (practice.memo && practice.memo.toLowerCase().includes(searchLower));
@@ -1033,16 +1030,14 @@ export default function AdminPage() {
                   <th>성별</th>
                   <th>연락처</th>
                   <th>생년월일</th>
-                  <th>거주지역</th>
                   <th>주소</th>
-                  <th>실습시작일</th>
-                  <th>성적표제출일</th>
-                  <th>선호학기</th>
                   <th>실습유형</th>
-                  <th>선호요일</th>
-                  <th>차량여부</th>
-                  <th>현금영수증</th>
-                  <th>실습처</th>
+                  <th>취업희망분야</th>
+                  <th>고용형태</th>
+                  <th>이력서</th>
+                  <th>자격증</th>
+                  <th>결제금액</th>
+                  <th>결제상태</th>
                   <th>유입경로</th>
                   <th>메모</th>
                   <th>신청일시</th>
@@ -1052,7 +1047,7 @@ export default function AdminPage() {
               <tbody>
                 {paginatedPracticeApplications.length === 0 ? (
                   <tr>
-                    <td colSpan={19} className={styles.empty}>
+                    <td colSpan={17} className={styles.empty}>
                       신청 내역이 없습니다.
                     </td>
                   </tr>
@@ -1066,21 +1061,29 @@ export default function AdminPage() {
                           onChange={() => toggleSelect(practice.id)}
                         />
                       </td>
-                      <td>{highlightText(practice.student_name, searchText)}</td>
+                      <td>{highlightText(practice.name, searchText)}</td>
                       <td>{practice.gender || '-'}</td>
                       <td>{highlightContact(practice.contact, searchText)}</td>
                       <td>{practice.birth_date || '-'}</td>
-                      <td>{practice.residence_area || '-'}</td>
-                      <td>{practice.address || '-'}</td>
-                      <td>{practice.practice_start_date || '-'}</td>
-                      <td>{practice.grade_report_date || '-'}</td>
-                      <td>{practice.preferred_semester || '-'}</td>
+                      <td>
+                        {[practice.address, practice.address_detail].filter(Boolean).join(' ') || '-'}
+                      </td>
                       <td>{practice.practice_type || '-'}</td>
-                      <td>{practice.preferred_days || '-'}</td>
-                      <td>{practice.has_car ? 'O' : 'X'}</td>
-                      <td>{practice.cash_receipt_number || '-'}</td>
-                      <td>{practice.practice_place || '-'}</td>
-                      <td>{practice.click_source || '-'}</td>
+                      <td>{practice.desired_job_field || '-'}</td>
+                      <td>{Array.isArray(practice.employment_types) ? practice.employment_types.join(', ') : '-'}</td>
+                      <td>{practice.has_resume === true ? '보유' : practice.has_resume === false ? '미보유' : '-'}</td>
+                      <td>{practice.certifications || '-'}</td>
+                      <td>{practice.payment_amount ? `${practice.payment_amount.toLocaleString()}원` : '-'}</td>
+                      <td>
+                        <span className={`${styles.paymentBadge} ${styles[`payment_${practice.payment_status || 'pending'}`]}`}>
+                          {practice.payment_status === 'paid' ? '결제완료'
+                            : practice.payment_status === 'requested' ? '요청됨'
+                            : practice.payment_status === 'failed' ? '실패'
+                            : practice.payment_status === 'confirmed' ? '확정'
+                            : '대기'}
+                        </span>
+                      </td>
+                      <td>{practice.click_source || '실습섭외신청'}</td>
                       <td>
                         <div
                           className={`${styles.memoCell} ${!practice.memo ? styles.empty : ''}`}
@@ -1103,10 +1106,7 @@ export default function AdminPage() {
                               const response = await fetch('/api/practice-applications', {
                                 method: 'PATCH',
                                 headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify({
-                                  id: practice.id,
-                                  status: e.target.value
-                                }),
+                                body: JSON.stringify({ id: practice.id, status: e.target.value }),
                               });
                               if (!response.ok) throw new Error('업데이트 실패');
                               fetchData();
@@ -1117,6 +1117,7 @@ export default function AdminPage() {
                           className={`${styles.statusSelect} ${styles[`status${practice.status || 'pending'}`]}`}
                         >
                           <option value="pending">대기</option>
+                          <option value="confirmed">확정</option>
                           <option value="in_progress">진행중</option>
                           <option value="completed">완료</option>
                         </select>
@@ -1465,13 +1466,13 @@ export default function AdminPage() {
       )}
 
       {/* 메모 편집 모달 */}
-      {showMemoModal && selectedConsultation && (
+      {showMemoModal && (selectedConsultation || selectedPractice) && (
         <div className={styles.modalOverlay} onClick={closeMemoModal}>
           <div className={styles.modalContent} onClick={(e) => e.stopPropagation()}>
             <h2 className={styles.modalTitle}>메모 편집</h2>
             <div className={styles.memoInfo}>
-              <p><strong>이름:</strong> {selectedConsultation.name}</p>
-              <p><strong>연락처:</strong> {selectedConsultation.contact}</p>
+              <p><strong>이름:</strong> {selectedConsultation?.name ?? selectedPractice?.name}</p>
+              <p><strong>연락처:</strong> {selectedConsultation?.contact ?? selectedPractice?.contact}</p>
             </div>
             <div className={styles.formGroup}>
               <label>메모</label>

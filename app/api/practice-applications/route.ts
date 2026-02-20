@@ -209,10 +209,9 @@ export async function POST(request: NextRequest) {
   }
 }
 
-// PATCH: 실습섭외신청서 업데이트
+// PATCH: 실습섭외신청서 업데이트 (어드민 전용 - memo, status, payment_status, manager)
 export async function PATCH(request: NextRequest) {
   try {
-    // 환경 변수 확인
     if (
       !process.env.NEXT_PUBLIC_SUPABASE_URL ||
       !process.env.SUPABASE_SERVICE_ROLE_KEY
@@ -224,71 +223,16 @@ export async function PATCH(request: NextRequest) {
     }
 
     const body = await request.json();
-    const {
-      id,
-      student_name,
-      gender,
-      contact,
-      birth_date,
-      residence_area,
-      address,
-      practice_start_date,
-      grade_report_date,
-      preferred_semester,
-      practice_type,
-      preferred_days,
-      has_car,
-      cash_receipt_number,
-      privacy_agreed,
-      practice_place,
-      memo,
-      status,
-      manager,
-    } = body;
+    const { id, memo, status, payment_status, manager } = body;
 
     if (!id) {
       return NextResponse.json({ error: 'ID is required' }, { status: 400 });
     }
 
-    // 업데이트할 필드 구성
-    const updateData: {
-      student_name?: string;
-      gender?: string | null;
-      contact?: string;
-      birth_date?: string | null;
-      residence_area?: string | null;
-      address?: string | null;
-      practice_start_date?: string | null;
-      grade_report_date?: string | null;
-      preferred_semester?: string | null;
-      practice_type?: string | null;
-      preferred_days?: string | null;
-      has_car?: boolean;
-      cash_receipt_number?: string | null;
-      privacy_agreed?: boolean;
-      practice_place?: string | null;
-      memo?: string | null;
-      status?: string;
-      manager?: string | null;
-    } = {};
-
-    if (student_name !== undefined) updateData.student_name = student_name;
-    if (gender !== undefined) updateData.gender = gender || null;
-    if (contact !== undefined) updateData.contact = contact;
-    if (birth_date !== undefined) updateData.birth_date = birth_date || null;
-    if (residence_area !== undefined) updateData.residence_area = residence_area || null;
-    if (address !== undefined) updateData.address = address || null;
-    if (practice_start_date !== undefined) updateData.practice_start_date = practice_start_date || null;
-    if (grade_report_date !== undefined) updateData.grade_report_date = grade_report_date || null;
-    if (preferred_semester !== undefined) updateData.preferred_semester = preferred_semester || null;
-    if (practice_type !== undefined) updateData.practice_type = practice_type || null;
-    if (preferred_days !== undefined) updateData.preferred_days = preferred_days || null;
-    if (has_car !== undefined) updateData.has_car = has_car;
-    if (cash_receipt_number !== undefined) updateData.cash_receipt_number = cash_receipt_number || null;
-    if (privacy_agreed !== undefined) updateData.privacy_agreed = privacy_agreed;
-    if (practice_place !== undefined) updateData.practice_place = practice_place || null;
+    const updateData: Record<string, unknown> = {};
     if (memo !== undefined) updateData.memo = memo;
     if (status !== undefined) updateData.status = status;
+    if (payment_status !== undefined) updateData.payment_status = payment_status;
     if (manager !== undefined) updateData.manager = manager || null;
 
     if (Object.keys(updateData).length === 0) {
