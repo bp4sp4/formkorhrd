@@ -238,25 +238,26 @@
 
 .editButton {
   composes: button;
-  background: white;
-  color: #3182f6;
-  border: 1px solid #3182f6;
+  background: #3182f6;
+  color: white;
 }
 
 .editButton:hover {
-  background: #eff6ff;
+  background: #1b64da;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(49, 130, 246, 0.3);
 }
 
 .deleteButton {
   composes: button;
-  background: white;
-  color: #f04452;
-  border: 1px solid #fee;
+  background: #fff0f3;
+  color: #e0284a;
+  border: 1px solid #ffc2cc;
 }
 
 .deleteButton:hover {
-  background: #fee;
-  border-color: #fdd;
+  background: #ffd6de;
+  border-color: #ffaab8;
 }
 
 .excelButton {
@@ -403,12 +404,14 @@
 
 .bulkDeleteButton {
   composes: button;
-  background: #f2f4f6;
-  color: #f04452;
+  background: #fff0f3;
+  color: #e0284a;
+  border: 1px solid #ffc2cc;
 }
 
 .bulkDeleteButton:hover {
-  background: #fee;
+  background: #ffd6de;
+  border-color: #ffaab8;
 }
 
 .stats {

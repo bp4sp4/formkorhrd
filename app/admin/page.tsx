@@ -1343,8 +1343,8 @@ export default function AdminPage() {
                           onChange={async (e) => {
                             const newStatus = e.target.value;
                             try {
-                              // 확정 시 취업신청으로 이동 (복사 후 원본 삭제)
-                              if (newStatus === "confirmed") {
+                              // 완료 시 취업신청으로 이동 (복사 후 원본 삭제)
+                              if (newStatus === "completed") {
                                 const empResponse = await fetch(
                                   "/api/employment-applications",
                                   {
@@ -1424,7 +1424,6 @@ export default function AdminPage() {
                           className={`${styles.statusSelect} ${styles[`status${practice.status || "completed"}`]}`}
                         >
                           <option value="pending">대기</option>
-                          <option value="confirmed">확정</option>
                           <option value="in_progress">진행중</option>
                           <option value="completed">완료</option>
                         </select>
