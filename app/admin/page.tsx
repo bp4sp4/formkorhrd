@@ -1170,9 +1170,15 @@ export default function AdminPage() {
                           consultation.service_employment && "취업",
                         ]
                           .filter(Boolean)
-                          .join(", ") || "-"}
+                          .join("+") || "-"}
                       </td>
-                      <td>{consultation.practice_planned_date || "-"}</td>
+                      <td>
+                        {consultation.practice_planned_date
+                          ? consultation.practice_planned_date.length === 6
+                            ? `${consultation.practice_planned_date.slice(0, 4)}-${consultation.practice_planned_date.slice(4, 6)}`
+                            : consultation.practice_planned_date
+                          : "-"}
+                      </td>
                       <td>{consultation.employment_hope_time || "-"}</td>
                       <td>
                         {consultation.employment_support_fund === true
