@@ -1,14 +1,19 @@
-'use client';
+"use client";
 
-import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import { supabase } from '@/lib/supabase';
-import styles from './admin.module.css';
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { supabase } from "@/lib/supabase";
+import styles from "./admin.module.css";
 
-type ConsultationStatus = '상담대기' | '상담중' | '실습처배정' | '취업처연계' | '완료';
-type FormType = 'consultation' | 'practice' | '취업연계';
-type StudentStatus = '상담대기' | '상담중' | '실습처배정' | '취업처연계완료';
-type StudyMethod = '구법' | '신법' | '구법+신법';
+type ConsultationStatus =
+  | "상담대기"
+  | "상담중"
+  | "실습처배정"
+  | "취업처연계"
+  | "완료";
+type FormType = "consultation" | "practice" | "취업연계";
+type StudentStatus = "상담대기" | "상담중" | "실습처배정" | "취업처연계완료";
+type StudyMethod = "구법" | "신법" | "구법+신법";
 
 interface Consultation {
   id: number;
@@ -90,44 +95,56 @@ interface EmploymentApplication {
 }
 
 export default function AdminPage() {
-  const [activeTab, setActiveTab] = useState<'consultation' | 'practice' | '취업연계' | 'employment'>('consultation');
+  const [activeTab, setActiveTab] = useState<
+    "consultation" | "practice" | "취업연계" | "employment"
+  >("취업연계");
   const [consultations, setConsultations] = useState<Consultation[]>([]);
-  const [practiceApplications, setPracticeApplications] = useState<PracticeApplication[]>([]);
-  const [employmentApplications, setEmploymentApplications] = useState<EmploymentApplication[]>([]);
+  const [practiceApplications, setPracticeApplications] = useState<
+    PracticeApplication[]
+  >([]);
+  const [employmentApplications, setEmploymentApplications] = useState<
+    EmploymentApplication[]
+  >([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
   const [showAddModal, setShowAddModal] = useState(false);
   const [showMemoModal, setShowMemoModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
-  const [selectedConsultation, setSelectedConsultation] = useState<Consultation | null>(null);
-  const [selectedPractice, setSelectedPractice] = useState<PracticeApplication | null>(null);
-  const [memoText, setMemoText] = useState('');
+  const [selectedConsultation, setSelectedConsultation] =
+    useState<Consultation | null>(null);
+  const [selectedPractice, setSelectedPractice] =
+    useState<PracticeApplication | null>(null);
+  const [memoText, setMemoText] = useState("");
   const [selectedIds, setSelectedIds] = useState<(number | string)[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
   // 필터 상태
-  const [searchText, setSearchText] = useState('');
-  const [statusFilter, setStatusFilter] = useState<ConsultationStatus | 'all'>('all');
-  const [studentStatusFilter, setStudentStatusFilter] = useState<StudentStatus | 'all'>('all');
-  const [formTypeFilter, setFormTypeFilter] = useState<FormType | 'all'>('all');
-  const [startDate, setStartDate] = useState('');
-  const [endDate, setEndDate] = useState('');
+  const [searchText, setSearchText] = useState("");
+  const [statusFilter, setStatusFilter] = useState<ConsultationStatus | "all">(
+    "all",
+  );
+  const [studentStatusFilter, setStudentStatusFilter] = useState<
+    StudentStatus | "all"
+  >("all");
+  const [formTypeFilter, setFormTypeFilter] = useState<FormType | "all">("all");
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
   const [formData, setFormData] = useState({
-    name: '',
-    contact: '',
-    type: 'consultation' as FormType,
-    progress: '',
-    practice_place: '',
+    name: "",
+    contact: "",
+    type: "consultation" as FormType,
+    progress: "",
+    practice_place: "",
     employment_consulting: false,
     employment_connection: false,
-    employment_after_cert: '',
-    student_status: '상담대기',
-    education: '',
-    hope_course: '',
-    reason: '',
-    click_source: '',
-    study_method: '' as StudyMethod | '',
-    address: ''
+    employment_after_cert: "",
+    student_status: "상담대기",
+    education: "",
+    hope_course: "",
+    reason: "",
+    click_source: "",
+    study_method: "" as StudyMethod | "",
+    address: "",
   });
   const router = useRouter();
 
@@ -137,11 +154,13 @@ export default function AdminPage() {
   }, []);
 
   const checkAuth = async () => {
-    const { data: { user } } = await supabase.auth.getUser();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
     if (user) {
       fetchData();
     } else {
-      router.push('/admin/login');
+      router.push("/admin/login");
     }
   };
 
@@ -155,44 +174,44 @@ export default function AdminPage() {
   // 로그아웃
   const handleLogout = async () => {
     await supabase.auth.signOut();
-    router.push('/admin/login');
+    router.push("/admin/login");
   };
 
   // 데이터 가져오기 (탭에 따라 다른 API 호출)
   const fetchData = async () => {
     setLoading(true);
     try {
-      if (activeTab === 'consultation' || activeTab === '취업연계') {
-        const response = await fetch('/api/consultations');
+      if (activeTab === "consultation" || activeTab === "취업연계") {
+        const response = await fetch("/api/consultations");
         if (!response.ok) {
-          throw new Error('상담 신청 목록을 불러오는데 실패했습니다.');
+          throw new Error("상담 신청 목록을 불러오는데 실패했습니다.");
         }
         const data = await response.json();
 
         // status가 없는 데이터에 기본값 설정
         const consultationsWithStatus = (data || []).map((item: any) => ({
           ...item,
-          status: item.status || '상담대기'
+          status: item.status || "상담대기",
         }));
 
         setConsultations(consultationsWithStatus);
-      } else if (activeTab === 'practice') {
-        const response = await fetch('/api/practice-applications');
+      } else if (activeTab === "practice") {
+        const response = await fetch("/api/practice-applications");
         if (!response.ok) {
-          throw new Error('실습섭외신청서 목록을 불러오는데 실패했습니다.');
+          throw new Error("실습섭외신청서 목록을 불러오는데 실패했습니다.");
         }
         const data = await response.json();
         setPracticeApplications(data || []);
-      } else if (activeTab === 'employment') {
-        const response = await fetch('/api/employment-applications');
+      } else if (activeTab === "employment") {
+        const response = await fetch("/api/employment-applications");
         if (!response.ok) {
-          throw new Error('취업신청 목록을 불러오는데 실패했습니다.');
+          throw new Error("취업신청 목록을 불러오는데 실패했습니다.");
         }
         const data = await response.json();
         setEmploymentApplications(data || []);
       }
     } catch (error: any) {
-      setError(error.message || '데이터를 불러오는데 실패했습니다.');
+      setError(error.message || "데이터를 불러오는데 실패했습니다.");
     } finally {
       setLoading(false);
     }
@@ -204,12 +223,12 @@ export default function AdminPage() {
   // 날짜 포맷팅
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
-    return new Intl.DateTimeFormat('ko-KR', {
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
-      hour: '2-digit',
-      minute: '2-digit',
+    return new Intl.DateTimeFormat("ko-KR", {
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
     }).format(date);
   };
 
@@ -217,10 +236,10 @@ export default function AdminPage() {
   const handleAddConsultation = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const response = await fetch('/api/consultations', {
-        method: 'POST',
+      const response = await fetch("/api/consultations", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({
           ...formData,
@@ -228,30 +247,30 @@ export default function AdminPage() {
         }),
       });
 
-      if (!response.ok) throw new Error('추가 실패');
+      if (!response.ok) throw new Error("추가 실패");
 
       // 폼 초기화 및 목록 새로고침
       setFormData({
-        name: '',
-        contact: '',
-        type: 'consultation',
-        progress: '',
-        practice_place: '',
+        name: "",
+        contact: "",
+        type: "consultation",
+        progress: "",
+        practice_place: "",
         employment_consulting: false,
         employment_connection: false,
-        employment_after_cert: '',
-        student_status: '상담대기',
-        education: '',
-        hope_course: '',
-        reason: '',
-        click_source: '',
-        study_method: '',
-        address: ''
+        employment_after_cert: "",
+        student_status: "상담대기",
+        education: "",
+        hope_course: "",
+        reason: "",
+        click_source: "",
+        study_method: "",
+        address: "",
       });
       setShowAddModal(false);
       fetchConsultations();
     } catch (error) {
-      alert('상담 신청 추가에 실패했습니다.');
+      alert("상담 신청 추가에 실패했습니다.");
     }
   };
 
@@ -260,32 +279,35 @@ export default function AdminPage() {
     if (!selectedConsultation && !selectedPractice) return;
 
     try {
-      const apiEndpoint = activeTab === 'practice' ? '/api/practice-applications' : '/api/consultations';
+      const apiEndpoint =
+        activeTab === "practice"
+          ? "/api/practice-applications"
+          : "/api/consultations";
       const id = selectedConsultation?.id || selectedPractice?.id;
 
       const response = await fetch(apiEndpoint, {
-        method: 'PATCH',
+        method: "PATCH",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({ id, memo: memoText }),
       });
 
-      if (!response.ok) throw new Error('메모 업데이트 실패');
+      if (!response.ok) throw new Error("메모 업데이트 실패");
 
       setShowMemoModal(false);
       setSelectedConsultation(null);
       setSelectedPractice(null);
-      setMemoText('');
+      setMemoText("");
       fetchData();
     } catch (error) {
-      alert('메모 저장에 실패했습니다.');
+      alert("메모 저장에 실패했습니다.");
     }
   };
 
   const openMemoModal = (consultation: Consultation) => {
     setSelectedConsultation(consultation);
-    setMemoText(consultation.memo || '');
+    setMemoText(consultation.memo || "");
     setShowMemoModal(true);
   };
 
@@ -293,16 +315,18 @@ export default function AdminPage() {
     setShowMemoModal(false);
     setSelectedConsultation(null);
     setSelectedPractice(null);
-    setMemoText('');
+    setMemoText("");
   };
 
   // 과목비용 모달 열기/닫기
   // 전화번호 자동 포맷팅
   const formatPhoneNumber = (value: string) => {
-    const numbers = value.replace(/[^0-9]/g, '');
+    const numbers = value.replace(/[^0-9]/g, "");
     if (numbers.length <= 3) return numbers;
-    if (numbers.length <= 7) return `${numbers.slice(0, 3)}-${numbers.slice(3)}`;
-    if (numbers.length <= 11) return `${numbers.slice(0, 3)}-${numbers.slice(3, 7)}-${numbers.slice(7)}`;
+    if (numbers.length <= 7)
+      return `${numbers.slice(0, 3)}-${numbers.slice(3)}`;
+    if (numbers.length <= 11)
+      return `${numbers.slice(0, 3)}-${numbers.slice(3, 7)}-${numbers.slice(7)}`;
     return `${numbers.slice(0, 3)}-${numbers.slice(3, 7)}-${numbers.slice(7, 11)}`;
   };
 
@@ -314,28 +338,28 @@ export default function AdminPage() {
   // 수정 모달 열기
   const openEditModal = () => {
     if (selectedIds.length !== 1) {
-      alert('수정할 항목을 1개만 선택해주세요.');
+      alert("수정할 항목을 1개만 선택해주세요.");
       return;
     }
-    const consultation = consultations.find(c => c.id === selectedIds[0]);
+    const consultation = consultations.find((c) => c.id === selectedIds[0]);
     if (consultation) {
       setSelectedConsultation(consultation);
       setFormData({
         name: consultation.name,
         contact: consultation.contact,
-        type: (consultation.type as FormType) || 'consultation',
-        progress: consultation.progress || '',
-        practice_place: consultation.practice_place || '',
+        type: (consultation.type as FormType) || "consultation",
+        progress: consultation.progress || "",
+        practice_place: consultation.practice_place || "",
         employment_consulting: consultation.employment_consulting || false,
         employment_connection: consultation.employment_connection || false,
-        employment_after_cert: consultation.employment_after_cert || '',
-        student_status: consultation.student_status || '상담대기',
-        education: consultation.education || '',
-        hope_course: consultation.hope_course || '',
-        reason: consultation.reason || '',
-        click_source: consultation.click_source || '',
-        study_method: consultation.study_method || '',
-        address: consultation.address || ''
+        employment_after_cert: consultation.employment_after_cert || "",
+        student_status: consultation.student_status || "상담대기",
+        education: consultation.education || "",
+        hope_course: consultation.hope_course || "",
+        reason: consultation.reason || "",
+        click_source: consultation.click_source || "",
+        study_method: consultation.study_method || "",
+        address: consultation.address || "",
       });
       setShowEditModal(true);
     }
@@ -347,10 +371,10 @@ export default function AdminPage() {
     if (!selectedConsultation) return;
 
     try {
-      const response = await fetch('/api/consultations', {
-        method: 'PATCH',
+      const response = await fetch("/api/consultations", {
+        method: "PATCH",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({
           id: selectedConsultation.id,
@@ -369,70 +393,74 @@ export default function AdminPage() {
         }),
       });
 
-      if (!response.ok) throw new Error('수정 실패');
+      if (!response.ok) throw new Error("수정 실패");
 
       setFormData({
-        name: '',
-        contact: '',
-        type: 'consultation',
-        progress: '',
-        practice_place: '',
+        name: "",
+        contact: "",
+        type: "consultation",
+        progress: "",
+        practice_place: "",
         employment_consulting: false,
         employment_connection: false,
-        employment_after_cert: '',
-        student_status: '상담대기',
-        education: '',
-        hope_course: '',
-        reason: '',
-        click_source: '',
-        study_method: '',
-        address: ''
+        employment_after_cert: "",
+        student_status: "상담대기",
+        education: "",
+        hope_course: "",
+        reason: "",
+        click_source: "",
+        study_method: "",
+        address: "",
       });
       setShowEditModal(false);
       setSelectedConsultation(null);
       setSelectedIds([]);
       fetchConsultations();
     } catch (error) {
-      alert('상담 신청 수정에 실패했습니다.');
+      alert("상담 신청 수정에 실패했습니다.");
     }
   };
 
   // 개별 상태 변경
-  const handleStatusChange = async (id: number, newStatus: ConsultationStatus) => {
+  const handleStatusChange = async (
+    id: number,
+    newStatus: ConsultationStatus,
+  ) => {
     try {
-      const response = await fetch('/api/consultations', {
-        method: 'PATCH',
+      const response = await fetch("/api/consultations", {
+        method: "PATCH",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({ id, status: newStatus }),
       });
 
-      if (!response.ok) throw new Error('상태 업데이트 실패');
+      if (!response.ok) throw new Error("상태 업데이트 실패");
 
       fetchConsultations();
     } catch (error) {
-      alert('상태 변경에 실패했습니다.');
+      alert("상태 변경에 실패했습니다.");
     }
   };
 
   // 체크박스 관련 함수
   const toggleSelectAll = () => {
-    const currentPageData = activeTab === 'practice'
-      ? paginatedPracticeApplications
-      : activeTab === 'employment'
-      ? paginatedEmploymentApplications
-      : paginatedConsultations;
+    const currentPageData =
+      activeTab === "practice"
+        ? paginatedPracticeApplications
+        : activeTab === "employment"
+          ? paginatedEmploymentApplications
+          : paginatedConsultations;
     if (selectedIds.length === currentPageData.length) {
       setSelectedIds([]);
     } else {
-      setSelectedIds(currentPageData.map(c => c.id));
+      setSelectedIds(currentPageData.map((c) => c.id));
     }
   };
 
   const toggleSelect = (id: number | string) => {
     if (selectedIds.includes(id)) {
-      setSelectedIds(selectedIds.filter(selectedId => selectedId !== id));
+      setSelectedIds(selectedIds.filter((selectedId) => selectedId !== id));
     } else {
       setSelectedIds([...selectedIds, id]);
     }
@@ -441,7 +469,7 @@ export default function AdminPage() {
   // 일괄 삭제
   const handleBulkDelete = async () => {
     if (selectedIds.length === 0) {
-      alert('삭제할 항목을 선택해주세요.');
+      alert("삭제할 항목을 선택해주세요.");
       return;
     }
 
@@ -450,30 +478,31 @@ export default function AdminPage() {
     }
 
     try {
-      const apiEndpoint = activeTab === 'practice'
-        ? '/api/practice-applications'
-        : activeTab === 'employment'
-        ? '/api/employment-applications'
-        : '/api/consultations';
+      const apiEndpoint =
+        activeTab === "practice"
+          ? "/api/practice-applications"
+          : activeTab === "employment"
+            ? "/api/employment-applications"
+            : "/api/consultations";
       const response = await fetch(apiEndpoint, {
-        method: 'DELETE',
+        method: "DELETE",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({ ids: selectedIds }),
       });
 
-      if (!response.ok) throw new Error('삭제 실패');
+      if (!response.ok) throw new Error("삭제 실패");
 
       setSelectedIds([]);
       fetchData();
     } catch (error) {
-      alert('삭제에 실패했습니다.');
+      alert("삭제에 실패했습니다.");
     }
   };
 
   // 필터링 - consultations
-  const filteredConsultations = consultations.filter(consultation => {
+  const filteredConsultations = consultations.filter((consultation) => {
     // 탭 필터 - 현재 선택된 탭에 맞는 타입만 표시
     if (consultation.type !== activeTab) {
       return false;
@@ -483,25 +512,32 @@ export default function AdminPage() {
     if (searchText) {
       const searchLower = searchText.toLowerCase();
       // 연락처는 하이픈 제거하고 비교
-      const contactWithoutHyphen = consultation.contact.replace(/-/g, '');
-      const searchWithoutHyphen = searchText.replace(/-/g, '');
+      const contactWithoutHyphen = consultation.contact.replace(/-/g, "");
+      const searchWithoutHyphen = searchText.replace(/-/g, "");
       const matchesSearch =
         consultation.name.toLowerCase().includes(searchLower) ||
-        contactWithoutHyphen.toLowerCase().includes(searchWithoutHyphen.toLowerCase()) ||
-        (consultation.manager && consultation.manager.toLowerCase().includes(searchLower)) ||
-        (consultation.memo && consultation.memo.toLowerCase().includes(searchLower));
+        contactWithoutHyphen
+          .toLowerCase()
+          .includes(searchWithoutHyphen.toLowerCase()) ||
+        (consultation.manager &&
+          consultation.manager.toLowerCase().includes(searchLower)) ||
+        (consultation.memo &&
+          consultation.memo.toLowerCase().includes(searchLower));
       if (!matchesSearch) return false;
     }
     // 상태 필터
-    if (statusFilter !== 'all' && consultation.status !== statusFilter) {
+    if (statusFilter !== "all" && consultation.status !== statusFilter) {
       return false;
     }
     // 학생상태 필터
-    if (studentStatusFilter !== 'all' && consultation.student_status !== studentStatusFilter) {
+    if (
+      studentStatusFilter !== "all" &&
+      consultation.student_status !== studentStatusFilter
+    ) {
       return false;
     }
     // 폼 타입 필터
-    if (formTypeFilter !== 'all' && consultation.type !== formTypeFilter) {
+    if (formTypeFilter !== "all" && consultation.type !== formTypeFilter) {
       return false;
     }
     // 날짜 필터
@@ -522,80 +558,93 @@ export default function AdminPage() {
   });
 
   // 필터링 - practice applications
-  const filteredPracticeApplications = practiceApplications.filter(practice => {
-    if (searchText) {
-      const searchLower = searchText.toLowerCase();
-      const contactWithoutHyphen = practice.contact.replace(/-/g, '');
-      const searchWithoutHyphen = searchText.replace(/-/g, '');
-      const matchesSearch =
-        practice.name.toLowerCase().includes(searchLower) ||
-        contactWithoutHyphen.toLowerCase().includes(searchWithoutHyphen.toLowerCase()) ||
-        (practice.manager && practice.manager.toLowerCase().includes(searchLower)) ||
-        (practice.memo && practice.memo.toLowerCase().includes(searchLower));
-      if (!matchesSearch) return false;
-    }
-    // 날짜 필터
-    if (startDate || endDate) {
-      const applicationDate = new Date(practice.created_at);
-      if (startDate) {
-        const start = new Date(startDate);
-        start.setHours(0, 0, 0, 0);
-        if (applicationDate < start) return false;
+  const filteredPracticeApplications = practiceApplications.filter(
+    (practice) => {
+      if (searchText) {
+        const searchLower = searchText.toLowerCase();
+        const contactWithoutHyphen = practice.contact.replace(/-/g, "");
+        const searchWithoutHyphen = searchText.replace(/-/g, "");
+        const matchesSearch =
+          practice.name.toLowerCase().includes(searchLower) ||
+          contactWithoutHyphen
+            .toLowerCase()
+            .includes(searchWithoutHyphen.toLowerCase()) ||
+          (practice.manager &&
+            practice.manager.toLowerCase().includes(searchLower)) ||
+          (practice.memo && practice.memo.toLowerCase().includes(searchLower));
+        if (!matchesSearch) return false;
       }
-      if (endDate) {
-        const end = new Date(endDate);
-        end.setHours(23, 59, 59, 999);
-        if (applicationDate > end) return false;
+      // 날짜 필터
+      if (startDate || endDate) {
+        const applicationDate = new Date(practice.created_at);
+        if (startDate) {
+          const start = new Date(startDate);
+          start.setHours(0, 0, 0, 0);
+          if (applicationDate < start) return false;
+        }
+        if (endDate) {
+          const end = new Date(endDate);
+          end.setHours(23, 59, 59, 999);
+          if (applicationDate > end) return false;
+        }
       }
-    }
-    return true;
-  });
+      return true;
+    },
+  );
 
   // 필터링 - employment applications
-  const filteredEmploymentApplications = employmentApplications.filter(emp => {
-    if (searchText) {
-      const searchLower = searchText.toLowerCase();
-      const contactWithoutHyphen = emp.contact.replace(/-/g, '');
-      const searchWithoutHyphen = searchText.replace(/-/g, '');
-      const matchesSearch =
-        emp.name.toLowerCase().includes(searchLower) ||
-        contactWithoutHyphen.toLowerCase().includes(searchWithoutHyphen.toLowerCase());
-      if (!matchesSearch) return false;
-    }
-    if (startDate || endDate) {
-      const applicationDate = new Date(emp.created_at);
-      if (startDate) {
-        const start = new Date(startDate);
-        start.setHours(0, 0, 0, 0);
-        if (applicationDate < start) return false;
+  const filteredEmploymentApplications = employmentApplications.filter(
+    (emp) => {
+      if (searchText) {
+        const searchLower = searchText.toLowerCase();
+        const contactWithoutHyphen = emp.contact.replace(/-/g, "");
+        const searchWithoutHyphen = searchText.replace(/-/g, "");
+        const matchesSearch =
+          emp.name.toLowerCase().includes(searchLower) ||
+          contactWithoutHyphen
+            .toLowerCase()
+            .includes(searchWithoutHyphen.toLowerCase());
+        if (!matchesSearch) return false;
       }
-      if (endDate) {
-        const end = new Date(endDate);
-        end.setHours(23, 59, 59, 999);
-        if (applicationDate > end) return false;
+      if (startDate || endDate) {
+        const applicationDate = new Date(emp.created_at);
+        if (startDate) {
+          const start = new Date(startDate);
+          start.setHours(0, 0, 0, 0);
+          if (applicationDate < start) return false;
+        }
+        if (endDate) {
+          const end = new Date(endDate);
+          end.setHours(23, 59, 59, 999);
+          if (applicationDate > end) return false;
+        }
       }
-    }
-    return true;
-  });
+      return true;
+    },
+  );
 
   // 페이징 계산 (필터링된 데이터 기준)
-  const filteredData = activeTab === 'practice'
-    ? filteredPracticeApplications
-    : activeTab === 'employment'
-    ? filteredEmploymentApplications
-    : filteredConsultations;
+  const filteredData =
+    activeTab === "practice"
+      ? filteredPracticeApplications
+      : activeTab === "employment"
+        ? filteredEmploymentApplications
+        : filteredConsultations;
   const totalPages = Math.ceil(filteredData.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
   const endIndex = startIndex + itemsPerPage;
-  const paginatedConsultations = activeTab !== 'practice' && activeTab !== 'employment'
-    ? filteredConsultations.slice(startIndex, endIndex)
-    : [];
-  const paginatedPracticeApplications = activeTab === 'practice'
-    ? filteredPracticeApplications.slice(startIndex, endIndex)
-    : [];
-  const paginatedEmploymentApplications = activeTab === 'employment'
-    ? filteredEmploymentApplications.slice(startIndex, endIndex)
-    : [];
+  const paginatedConsultations =
+    activeTab !== "practice" && activeTab !== "employment"
+      ? filteredConsultations.slice(startIndex, endIndex)
+      : [];
+  const paginatedPracticeApplications =
+    activeTab === "practice"
+      ? filteredPracticeApplications.slice(startIndex, endIndex)
+      : [];
+  const paginatedEmploymentApplications =
+    activeTab === "employment"
+      ? filteredEmploymentApplications.slice(startIndex, endIndex)
+      : [];
 
   const goToPage = (page: number) => {
     setCurrentPage(page);
@@ -604,13 +653,17 @@ export default function AdminPage() {
 
   // 검색어 하이라이트 함수
   const highlightText = (text: string | null | undefined, query: string) => {
-    if (!text || !query) return text || '';
+    if (!text || !query) return text || "";
 
-    const parts = text.split(new RegExp(`(${query})`, 'gi'));
+    const parts = text.split(new RegExp(`(${query})`, "gi"));
     return parts.map((part, index) =>
-      part.toLowerCase() === query.toLowerCase()
-        ? <span key={index} className={styles.highlight}>{part}</span>
-        : part
+      part.toLowerCase() === query.toLowerCase() ? (
+        <span key={index} className={styles.highlight}>
+          {part}
+        </span>
+      ) : (
+        part
+      ),
     );
   };
 
@@ -619,19 +672,21 @@ export default function AdminPage() {
     if (!query) return contact;
 
     // 검색어에 하이픈이 포함되어 있으면 일반 하이라이트 사용
-    if (query.includes('-')) {
+    if (query.includes("-")) {
       return highlightText(contact, query);
     }
 
     // 검색어에서 숫자만 추출
-    const searchNumbers = query.replace(/[^0-9]/g, '');
+    const searchNumbers = query.replace(/[^0-9]/g, "");
     if (searchNumbers.length < 3) return contact;
 
     // 연락처를 숫자만 추출
-    const contactNumbers = contact.replace(/-/g, '');
+    const contactNumbers = contact.replace(/-/g, "");
 
     // 검색어가 포함되어 있는지 확인
-    const matchIndex = contactNumbers.toLowerCase().indexOf(searchNumbers.toLowerCase());
+    const matchIndex = contactNumbers
+      .toLowerCase()
+      .indexOf(searchNumbers.toLowerCase());
     if (matchIndex === -1) return contact;
 
     // 하이픈 포함한 원본에서 매칭 위치 찾기
@@ -640,7 +695,7 @@ export default function AdminPage() {
     let endPos = -1;
 
     for (let i = 0; i < contact.length; i++) {
-      if (contact[i] !== '-') {
+      if (contact[i] !== "-") {
         if (currentNumberIndex === matchIndex && startPos === -1) {
           startPos = i;
         }
@@ -658,7 +713,9 @@ export default function AdminPage() {
     return (
       <>
         {contact.substring(0, startPos)}
-        <span className={styles.highlight}>{contact.substring(startPos, endPos)}</span>
+        <span className={styles.highlight}>
+          {contact.substring(startPos, endPos)}
+        </span>
         {contact.substring(endPos)}
       </>
     );
@@ -667,46 +724,61 @@ export default function AdminPage() {
   // 엑셀 다운로드 함수
   const handleExcelDownload = () => {
     // 선택된 항목이 있으면 선택된 것만, 없으면 필터링된 전체 다운로드
-    const dataToDownload = selectedIds.length > 0
-      ? consultations.filter(c => selectedIds.includes(c.id))
-      : filteredConsultations;
+    const dataToDownload =
+      selectedIds.length > 0
+        ? consultations.filter((c) => selectedIds.includes(c.id))
+        : filteredConsultations;
 
     if (dataToDownload.length === 0) {
-      alert('다운로드할 데이터가 없습니다.');
+      alert("다운로드할 데이터가 없습니다.");
       return;
     }
 
     // CSV 형식으로 다운로드
-    const headers = ['이름', '연락처', '최종학력', '취득사유', '유입 경로', '메모', '신청일시', '상태'];
-    const csvData = dataToDownload.map(consultation => [
+    const headers = [
+      "이름",
+      "연락처",
+      "최종학력",
+      "취득사유",
+      "유입 경로",
+      "메모",
+      "신청일시",
+      "상태",
+    ];
+    const csvData = dataToDownload.map((consultation) => [
       consultation.name,
       consultation.contact,
-      consultation.education || '',
-      consultation.reason || '',
-      consultation.click_source || '',
-      consultation.memo || '',
+      consultation.education || "",
+      consultation.reason || "",
+      consultation.click_source || "",
+      consultation.memo || "",
       formatDate(consultation.created_at),
-      consultation.status || '상담대기중'
+      consultation.status || "상담대기중",
     ]);
 
     const csvContent = [
-      headers.join(','),
-      ...csvData.map(row => row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(','))
-    ].join('\n');
+      headers.join(","),
+      ...csvData.map((row) =>
+        row.map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(","),
+      ),
+    ].join("\n");
 
     // UTF-8 BOM 추가 (엑셀에서 한글 깨짐 방지)
-    const BOM = '\uFEFF';
-    const blob = new Blob([BOM + csvContent], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement('a');
+    const BOM = "\uFEFF";
+    const blob = new Blob([BOM + csvContent], {
+      type: "text/csv;charset=utf-8;",
+    });
+    const link = document.createElement("a");
     const url = URL.createObjectURL(blob);
 
-    const fileName = selectedIds.length > 0
-      ? `상담신청_선택${selectedIds.length}건_${new Date().toISOString().split('T')[0]}.csv`
-      : `상담신청_${new Date().toISOString().split('T')[0]}.csv`;
+    const fileName =
+      selectedIds.length > 0
+        ? `상담신청_선택${selectedIds.length}건_${new Date().toISOString().split("T")[0]}.csv`
+        : `상담신청_${new Date().toISOString().split("T")[0]}.csv`;
 
-    link.setAttribute('href', url);
-    link.setAttribute('download', fileName);
-    link.style.visibility = 'hidden';
+    link.setAttribute("href", url);
+    link.setAttribute("download", fileName);
+    link.style.visibility = "hidden";
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -720,41 +792,31 @@ export default function AdminPage() {
         <div className={styles.tabButtons}>
           <button
             onClick={() => {
-              setActiveTab('consultation');
+              setActiveTab("취업연계");
               setCurrentPage(1);
               setSelectedIds([]);
             }}
-            className={`${styles.tabButton} ${activeTab === 'consultation' ? styles.tabButtonActive : ''}`}
+            className={`${styles.tabButton} ${activeTab === "취업연계" ? styles.tabButtonActive : ""}`}
           >
-            무료 상담신청
+            상담신청
           </button>
           <button
             onClick={() => {
-              setActiveTab('취업연계');
+              setActiveTab("practice");
               setCurrentPage(1);
               setSelectedIds([]);
             }}
-            className={`${styles.tabButton} ${activeTab === '취업연계' ? styles.tabButtonActive : ''}`}
-          >
-            취업연계
-          </button>
-          <button
-            onClick={() => {
-              setActiveTab('practice');
-              setCurrentPage(1);
-              setSelectedIds([]);
-            }}
-            className={`${styles.tabButton} ${activeTab === 'practice' ? styles.tabButtonActive : ''}`}
+            className={`${styles.tabButton} ${activeTab === "practice" ? styles.tabButtonActive : ""}`}
           >
             실습섭외신청서
           </button>
           <button
             onClick={() => {
-              setActiveTab('employment');
+              setActiveTab("employment");
               setCurrentPage(1);
               setSelectedIds([]);
             }}
-            className={`${styles.tabButton} ${activeTab === 'employment' ? styles.tabButtonActive : ''}`}
+            className={`${styles.tabButton} ${activeTab === "employment" ? styles.tabButtonActive : ""}`}
           >
             취업신청
           </button>
@@ -772,7 +834,12 @@ export default function AdminPage() {
       {/* 제목 및 카운트 */}
       <div className={styles.titleSection}>
         <h1 className={styles.title}>
-          {activeTab === 'consultation' ? '무료 상담신청' : activeTab === '취업연계' ? '취업연계' : activeTab === 'practice' ? '실습섭외신청서' : '취업신청'} 관리
+          {activeTab === "취업연계"
+            ? "상담신청"
+            : activeTab === "practice"
+              ? "실습섭외신청서"
+              : "취업신청"}{" "}
+          관리
         </h1>
         <span className={styles.count}>{filteredData.length}건</span>
       </div>
@@ -797,7 +864,7 @@ export default function AdminPage() {
             <select
               value={statusFilter}
               onChange={(e) => {
-                setStatusFilter(e.target.value as ConsultationStatus | 'all');
+                setStatusFilter(e.target.value as ConsultationStatus | "all");
                 setCurrentPage(1);
               }}
               className={styles.filterSelect}
@@ -813,7 +880,7 @@ export default function AdminPage() {
             <select
               value={studentStatusFilter}
               onChange={(e) => {
-                setStudentStatusFilter(e.target.value as StudentStatus | 'all');
+                setStudentStatusFilter(e.target.value as StudentStatus | "all");
                 setCurrentPage(1);
               }}
               className={styles.filterSelect}
@@ -828,14 +895,13 @@ export default function AdminPage() {
             <select
               value={formTypeFilter}
               onChange={(e) => {
-                setFormTypeFilter(e.target.value as FormType | 'all');
+                setFormTypeFilter(e.target.value as FormType | "all");
                 setCurrentPage(1);
               }}
               className={styles.filterSelect}
             >
               <option value="all">전체 폼타입</option>
-              <option value="consultation">상담신청</option>
-              <option value="취업연계">취업연계</option>
+              <option value="취업연계">상담신청</option>
               <option value="practice">실습신청서</option>
             </select>
 
@@ -861,15 +927,20 @@ export default function AdminPage() {
               placeholder="종료일"
             />
 
-            {(searchText || statusFilter !== 'all' || studentStatusFilter !== 'all' || formTypeFilter !== 'all' || startDate || endDate) && (
+            {(searchText ||
+              statusFilter !== "all" ||
+              studentStatusFilter !== "all" ||
+              formTypeFilter !== "all" ||
+              startDate ||
+              endDate) && (
               <button
                 onClick={() => {
-                  setSearchText('');
-                  setStatusFilter('all');
-                  setStudentStatusFilter('all');
-                  setFormTypeFilter('all');
-                  setStartDate('');
-                  setEndDate('');
+                  setSearchText("");
+                  setStatusFilter("all");
+                  setStudentStatusFilter("all");
+                  setFormTypeFilter("all");
+                  setStartDate("");
+                  setEndDate("");
                   setCurrentPage(1);
                 }}
                 className={styles.clearFilterButton}
@@ -881,7 +952,10 @@ export default function AdminPage() {
         </div>
 
         <div className={styles.actionButtons}>
-          <button onClick={() => setShowAddModal(true)} className={styles.addButton}>
+          <button
+            onClick={() => setShowAddModal(true)}
+            className={styles.addButton}
+          >
             추가
           </button>
           {selectedIds.length === 1 && (
@@ -895,7 +969,9 @@ export default function AdminPage() {
             </button>
           )}
           <button onClick={handleExcelDownload} className={styles.excelButton}>
-            {selectedIds.length > 0 ? `선택 다운로드 (${selectedIds.length})` : '엑셀 다운로드'}
+            {selectedIds.length > 0
+              ? `선택 다운로드 (${selectedIds.length})`
+              : "엑셀 다운로드"}
           </button>
         </div>
       </div>
@@ -907,14 +983,17 @@ export default function AdminPage() {
       ) : (
         <div className={styles.tableContainer}>
           {/* 무료 상담신청 탭 */}
-          {activeTab === 'consultation' && (
+          {activeTab === "consultation" && (
             <table className={styles.table}>
               <thead>
                 <tr>
                   <th className={styles.checkboxCell}>
                     <input
                       type="checkbox"
-                      checked={selectedIds.length === paginatedConsultations.length && paginatedConsultations.length > 0}
+                      checked={
+                        selectedIds.length === paginatedConsultations.length &&
+                        paginatedConsultations.length > 0
+                      }
                       onChange={toggleSelectAll}
                     />
                   </th>
@@ -938,7 +1017,14 @@ export default function AdminPage() {
                   </tr>
                 ) : (
                   paginatedConsultations.map((consultation) => (
-                    <tr key={consultation.id} className={selectedIds.includes(consultation.id) ? styles.selectedRow : ''}>
+                    <tr
+                      key={consultation.id}
+                      className={
+                        selectedIds.includes(consultation.id)
+                          ? styles.selectedRow
+                          : ""
+                      }
+                    >
                       <td className={styles.checkboxCell}>
                         <input
                           type="checkbox"
@@ -947,30 +1033,38 @@ export default function AdminPage() {
                         />
                       </td>
                       <td>{highlightText(consultation.name, searchText)}</td>
-                      <td>{highlightContact(consultation.contact, searchText)}</td>
-                      <td>{consultation.address || '-'}</td>
-                      <td>{consultation.progress || '-'}</td>
-                      <td>{consultation.employment_after_cert || '-'}</td>
+                      <td>
+                        {highlightContact(consultation.contact, searchText)}
+                      </td>
+                      <td>{consultation.address || "-"}</td>
+                      <td>{consultation.progress || "-"}</td>
+                      <td>{consultation.employment_after_cert || "-"}</td>
                       <td>
                         <select
-                          value={consultation.study_method || ''}
+                          value={consultation.study_method || ""}
                           onChange={async (e) => {
                             try {
-                              const response = await fetch('/api/consultations', {
-                                method: 'PATCH',
-                                headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify({
-                                  id: consultation.id,
-                                  study_method: e.target.value || null
-                                }),
-                              });
-                              if (!response.ok) throw new Error('업데이트 실패');
+                              const response = await fetch(
+                                "/api/consultations",
+                                {
+                                  method: "PATCH",
+                                  headers: {
+                                    "Content-Type": "application/json",
+                                  },
+                                  body: JSON.stringify({
+                                    id: consultation.id,
+                                    study_method: e.target.value || null,
+                                  }),
+                                },
+                              );
+                              if (!response.ok)
+                                throw new Error("업데이트 실패");
                               fetchConsultations();
                             } catch (error) {
-                              alert('구법/신법 변경에 실패했습니다.');
+                              alert("구법/신법 변경에 실패했습니다.");
                             }
                           }}
-                          className={`${styles.studyMethodSelect} ${consultation.study_method ? styles[`studyMethod${consultation.study_method.replace(/\+/g, 'Plus')}`] : ''}`}
+                          className={`${styles.studyMethodSelect} ${consultation.study_method ? styles[`studyMethod${consultation.study_method.replace(/\+/g, "Plus")}`] : ""}`}
                         >
                           <option value="">선택</option>
                           <option value="구법">구법</option>
@@ -980,19 +1074,26 @@ export default function AdminPage() {
                       </td>
                       <td>
                         <div
-                          className={`${styles.memoCell} ${!consultation.memo ? styles.empty : ''}`}
+                          className={`${styles.memoCell} ${!consultation.memo ? styles.empty : ""}`}
                           onClick={() => openMemoModal(consultation)}
-                          title={consultation.memo || '메모 추가...'}
+                          title={consultation.memo || "메모 추가..."}
                         >
-                          {consultation.memo ? highlightText(consultation.memo, searchText) : '메모 추가...'}
+                          {consultation.memo
+                            ? highlightText(consultation.memo, searchText)
+                            : "메모 추가..."}
                         </div>
                       </td>
                       <td>{formatDate(consultation.created_at)}</td>
                       <td>
                         <select
-                          value={consultation.status || '상담대기'}
-                          onChange={(e) => handleStatusChange(consultation.id, e.target.value as ConsultationStatus)}
-                          className={`${styles.statusSelect} ${styles[`status${(consultation.status || '상담대기').replace(/\s/g, '')}`]}`}
+                          value={consultation.status || "상담대기"}
+                          onChange={(e) =>
+                            handleStatusChange(
+                              consultation.id,
+                              e.target.value as ConsultationStatus,
+                            )
+                          }
+                          className={`${styles.statusSelect} ${styles[`status${(consultation.status || "상담대기").replace(/\s/g, "")}`]}`}
                         >
                           <option value="상담대기">상담대기</option>
                           <option value="상담중">상담중</option>
@@ -1009,14 +1110,17 @@ export default function AdminPage() {
           )}
 
           {/* 취업연계 탭 */}
-          {activeTab === '취업연계' && (
+          {activeTab === "취업연계" && (
             <table className={styles.table}>
               <thead>
                 <tr>
                   <th className={styles.checkboxCell}>
                     <input
                       type="checkbox"
-                      checked={selectedIds.length === paginatedConsultations.length && paginatedConsultations.length > 0}
+                      checked={
+                        selectedIds.length === paginatedConsultations.length &&
+                        paginatedConsultations.length > 0
+                      }
                       onChange={toggleSelectAll}
                     />
                   </th>
@@ -1041,7 +1145,14 @@ export default function AdminPage() {
                   </tr>
                 ) : (
                   paginatedConsultations.map((consultation) => (
-                    <tr key={consultation.id} className={selectedIds.includes(consultation.id) ? styles.selectedRow : ''}>
+                    <tr
+                      key={consultation.id}
+                      className={
+                        selectedIds.includes(consultation.id)
+                          ? styles.selectedRow
+                          : ""
+                      }
+                    >
                       <td className={styles.checkboxCell}>
                         <input
                           type="checkbox"
@@ -1050,38 +1161,49 @@ export default function AdminPage() {
                         />
                       </td>
                       <td>{highlightText(consultation.name, searchText)}</td>
-                      <td>{highlightContact(consultation.contact, searchText)}</td>
+                      <td>
+                        {highlightContact(consultation.contact, searchText)}
+                      </td>
                       <td>
                         {[
-                          consultation.service_practice && '실습',
-                          consultation.service_employment && '취업'
-                        ].filter(Boolean).join(', ') || '-'}
+                          consultation.service_practice && "실습",
+                          consultation.service_employment && "취업",
+                        ]
+                          .filter(Boolean)
+                          .join(", ") || "-"}
                       </td>
-                      <td>{consultation.practice_planned_date || '-'}</td>
-                      <td>{consultation.employment_hope_time || '-'}</td>
+                      <td>{consultation.practice_planned_date || "-"}</td>
+                      <td>{consultation.employment_hope_time || "-"}</td>
                       <td>
                         {consultation.employment_support_fund === true
-                          ? '희망함'
+                          ? "희망함"
                           : consultation.employment_support_fund === false
-                          ? '희망하지 않음'
-                          : '-'}
+                            ? "희망하지 않음"
+                            : "-"}
                       </td>
-                      <td>{consultation.click_source || '-'}</td>
+                      <td>{consultation.click_source || "-"}</td>
                       <td>
                         <div
-                          className={`${styles.memoCell} ${!consultation.memo ? styles.empty : ''}`}
+                          className={`${styles.memoCell} ${!consultation.memo ? styles.empty : ""}`}
                           onClick={() => openMemoModal(consultation)}
-                          title={consultation.memo || '메모 추가...'}
+                          title={consultation.memo || "메모 추가..."}
                         >
-                          {consultation.memo ? highlightText(consultation.memo, searchText) : '메모 추가...'}
+                          {consultation.memo
+                            ? highlightText(consultation.memo, searchText)
+                            : "메모 추가..."}
                         </div>
                       </td>
                       <td>{formatDate(consultation.created_at)}</td>
                       <td>
                         <select
-                          value={consultation.status || '상담대기'}
-                          onChange={(e) => handleStatusChange(consultation.id, e.target.value as ConsultationStatus)}
-                          className={`${styles.statusSelect} ${styles[`status${(consultation.status || '상담대기').replace(/\s/g, '')}`]}`}
+                          value={consultation.status || "상담대기"}
+                          onChange={(e) =>
+                            handleStatusChange(
+                              consultation.id,
+                              e.target.value as ConsultationStatus,
+                            )
+                          }
+                          className={`${styles.statusSelect} ${styles[`status${(consultation.status || "상담대기").replace(/\s/g, "")}`]}`}
                         >
                           <option value="상담대기">상담대기</option>
                           <option value="상담중">상담중</option>
@@ -1097,14 +1219,18 @@ export default function AdminPage() {
           )}
 
           {/* 실습섭외신청서 탭 */}
-          {activeTab === 'practice' && (
+          {activeTab === "practice" && (
             <table className={styles.table}>
               <thead>
                 <tr>
                   <th className={styles.checkboxCell}>
                     <input
                       type="checkbox"
-                      checked={selectedIds.length === paginatedPracticeApplications.length && paginatedPracticeApplications.length > 0}
+                      checked={
+                        selectedIds.length ===
+                          paginatedPracticeApplications.length &&
+                        paginatedPracticeApplications.length > 0
+                      }
                       onChange={toggleSelectAll}
                     />
                   </th>
@@ -1135,7 +1261,14 @@ export default function AdminPage() {
                   </tr>
                 ) : (
                   paginatedPracticeApplications.map((practice) => (
-                    <tr key={practice.id} className={selectedIds.includes(practice.id) ? styles.selectedRow : ''}>
+                    <tr
+                      key={practice.id}
+                      className={
+                        selectedIds.includes(practice.id)
+                          ? styles.selectedRow
+                          : ""
+                      }
+                    >
                       <td className={styles.checkboxCell}>
                         <input
                           type="checkbox"
@@ -1144,101 +1277,151 @@ export default function AdminPage() {
                         />
                       </td>
                       <td>{highlightText(practice.name, searchText)}</td>
-                      <td>{practice.gender || '-'}</td>
+                      <td>{practice.gender || "-"}</td>
                       <td>{highlightContact(practice.contact, searchText)}</td>
-                      <td>{practice.birth_date || '-'}</td>
+                      <td>{practice.birth_date || "-"}</td>
                       <td>
-                        {[practice.address, practice.address_detail].filter(Boolean).join(' ') || '-'}
+                        {[practice.address, practice.address_detail]
+                          .filter(Boolean)
+                          .join(" ") || "-"}
                       </td>
-                      <td>{practice.practice_type || '-'}</td>
-                      <td>{practice.desired_job_field || '-'}</td>
-                      <td>{Array.isArray(practice.employment_types) ? practice.employment_types.join(', ') : '-'}</td>
-                      <td>{practice.has_resume === true ? '보유' : practice.has_resume === false ? '미보유' : '-'}</td>
-                      <td>{practice.certifications || '-'}</td>
-                      <td>{practice.payment_amount ? `${practice.payment_amount.toLocaleString()}원` : '-'}</td>
+                      <td>{practice.practice_type || "-"}</td>
+                      <td>{practice.desired_job_field || "-"}</td>
                       <td>
-                        <span className={`${styles.paymentBadge} ${styles[`payment_${practice.payment_status || 'pending'}`]}`}>
-                          {practice.payment_status === 'paid' ? '결제완료'
-                            : practice.payment_status === 'requested' ? '요청됨'
-                            : practice.payment_status === 'failed' ? '실패'
-                            : practice.payment_status === 'confirmed' ? '확정'
-                            : '대기'}
+                        {Array.isArray(practice.employment_types)
+                          ? practice.employment_types.join(", ")
+                          : "-"}
+                      </td>
+                      <td>
+                        {practice.has_resume === true
+                          ? "보유"
+                          : practice.has_resume === false
+                            ? "미보유"
+                            : "-"}
+                      </td>
+                      <td>{practice.certifications || "-"}</td>
+                      <td>
+                        {practice.payment_amount
+                          ? `${practice.payment_amount.toLocaleString()}원`
+                          : "-"}
+                      </td>
+                      <td>
+                        <span
+                          className={`${styles.paymentBadge} ${styles[`payment_${practice.payment_status || "pending"}`]}`}
+                        >
+                          {practice.payment_status === "paid"
+                            ? "결제완료"
+                            : practice.payment_status === "requested"
+                              ? "요청됨"
+                              : practice.payment_status === "failed"
+                                ? "실패"
+                                : practice.payment_status === "confirmed"
+                                  ? "확정"
+                                  : "대기"}
                         </span>
                       </td>
-                      <td>{practice.click_source || '실습섭외신청'}</td>
+                      <td>{practice.click_source || "실습섭외신청"}</td>
                       <td>
                         <div
-                          className={`${styles.memoCell} ${!practice.memo ? styles.empty : ''}`}
+                          className={`${styles.memoCell} ${!practice.memo ? styles.empty : ""}`}
                           onClick={() => {
                             setSelectedPractice(practice);
-                            setMemoText(practice.memo || '');
+                            setMemoText(practice.memo || "");
                             setShowMemoModal(true);
                           }}
-                          title={practice.memo || '메모 추가...'}
+                          title={practice.memo || "메모 추가..."}
                         >
-                          {practice.memo ? highlightText(practice.memo, searchText) : '메모 추가...'}
+                          {practice.memo
+                            ? highlightText(practice.memo, searchText)
+                            : "메모 추가..."}
                         </div>
                       </td>
                       <td>{formatDate(practice.created_at)}</td>
                       <td>
                         <select
-                          value={practice.status || 'completed'}
+                          value={practice.status || "completed"}
                           onChange={async (e) => {
                             const newStatus = e.target.value;
                             try {
                               // 확정 시 취업신청으로 이동 (복사 후 원본 삭제)
-                              if (newStatus === 'confirmed') {
-                                const empResponse = await fetch('/api/employment-applications', {
-                                  method: 'POST',
-                                  headers: { 'Content-Type': 'application/json' },
-                                  body: JSON.stringify({
-                                    name: practice.name,
-                                    gender: practice.gender,
-                                    contact: practice.contact,
-                                    birth_date: practice.birth_date,
-                                    address: practice.address,
-                                    address_detail: practice.address_detail,
-                                    desired_job_field: practice.desired_job_field,
-                                    employment_types: practice.employment_types,
-                                    has_resume: practice.has_resume,
-                                    certifications: practice.certifications,
-                                    payment_amount: practice.payment_amount,
-                                    payment_status: practice.payment_status,
-                                    payment_id: practice.payment_id,
-                                    privacy_agreed: practice.privacy_agreed,
-                                    terms_agreed: practice.terms_agreed,
-                                    click_source: practice.click_source || '실습섭외신청',
-                                    status: 'pending',
-                                  }),
-                                });
+                              if (newStatus === "confirmed") {
+                                const empResponse = await fetch(
+                                  "/api/employment-applications",
+                                  {
+                                    method: "POST",
+                                    headers: {
+                                      "Content-Type": "application/json",
+                                    },
+                                    body: JSON.stringify({
+                                      name: practice.name,
+                                      gender: practice.gender,
+                                      contact: practice.contact,
+                                      birth_date: practice.birth_date,
+                                      address: practice.address,
+                                      address_detail: practice.address_detail,
+                                      desired_job_field:
+                                        practice.desired_job_field,
+                                      employment_types:
+                                        practice.employment_types,
+                                      has_resume: practice.has_resume,
+                                      certifications: practice.certifications,
+                                      payment_amount: practice.payment_amount,
+                                      payment_status: practice.payment_status,
+                                      payment_id: practice.payment_id,
+                                      privacy_agreed: practice.privacy_agreed,
+                                      terms_agreed: practice.terms_agreed,
+                                      click_source:
+                                        practice.click_source || "실습섭외신청",
+                                      status: "pending",
+                                    }),
+                                  },
+                                );
                                 if (!empResponse.ok) {
-                                  alert('취업신청 이동에 실패했습니다.');
+                                  alert("취업신청 이동에 실패했습니다.");
                                   return;
                                 }
                                 // 원본 실습섭외 신청서 삭제
-                                const deleteResponse = await fetch('/api/practice-applications', {
-                                  method: 'DELETE',
-                                  headers: { 'Content-Type': 'application/json' },
-                                  body: JSON.stringify({ ids: [practice.id] }),
-                                });
+                                const deleteResponse = await fetch(
+                                  "/api/practice-applications",
+                                  {
+                                    method: "DELETE",
+                                    headers: {
+                                      "Content-Type": "application/json",
+                                    },
+                                    body: JSON.stringify({
+                                      ids: [practice.id],
+                                    }),
+                                  },
+                                );
                                 if (!deleteResponse.ok) {
-                                  alert('이동은 완료됐으나 원본 삭제에 실패했습니다.');
+                                  alert(
+                                    "이동은 완료됐으나 원본 삭제에 실패했습니다.",
+                                  );
                                 }
                               } else {
-                                const response = await fetch('/api/practice-applications', {
-                                  method: 'PATCH',
-                                  headers: { 'Content-Type': 'application/json' },
-                                  body: JSON.stringify({ id: practice.id, status: newStatus }),
-                                });
-                                if (!response.ok) throw new Error('업데이트 실패');
+                                const response = await fetch(
+                                  "/api/practice-applications",
+                                  {
+                                    method: "PATCH",
+                                    headers: {
+                                      "Content-Type": "application/json",
+                                    },
+                                    body: JSON.stringify({
+                                      id: practice.id,
+                                      status: newStatus,
+                                    }),
+                                  },
+                                );
+                                if (!response.ok)
+                                  throw new Error("업데이트 실패");
                               }
 
                               fetchData();
                             } catch (error) {
-                              alert('상태 변경에 실패했습니다.');
+                              alert("상태 변경에 실패했습니다.");
                             }
                           }}
-                          className={`${styles.statusSelect} ${styles[`status${practice.status || 'completed'}`]}`}
+                          className={`${styles.statusSelect} ${styles[`status${practice.status || "completed"}`]}`}
                         >
                           <option value="pending">대기</option>
                           <option value="confirmed">확정</option>
@@ -1254,14 +1437,18 @@ export default function AdminPage() {
           )}
 
           {/* 취업신청 탭 */}
-          {activeTab === 'employment' && (
+          {activeTab === "employment" && (
             <table className={styles.table}>
               <thead>
                 <tr>
                   <th className={styles.checkboxCell}>
                     <input
                       type="checkbox"
-                      checked={selectedIds.length === paginatedEmploymentApplications.length && paginatedEmploymentApplications.length > 0}
+                      checked={
+                        selectedIds.length ===
+                          paginatedEmploymentApplications.length &&
+                        paginatedEmploymentApplications.length > 0
+                      }
                       onChange={toggleSelectAll}
                     />
                   </th>
@@ -1290,7 +1477,12 @@ export default function AdminPage() {
                   </tr>
                 ) : (
                   paginatedEmploymentApplications.map((emp) => (
-                    <tr key={emp.id} className={selectedIds.includes(emp.id) ? styles.selectedRow : ''}>
+                    <tr
+                      key={emp.id}
+                      className={
+                        selectedIds.includes(emp.id) ? styles.selectedRow : ""
+                      }
+                    >
                       <td className={styles.checkboxCell}>
                         <input
                           type="checkbox"
@@ -1299,45 +1491,76 @@ export default function AdminPage() {
                         />
                       </td>
                       <td>{highlightText(emp.name, searchText)}</td>
-                      <td>{emp.gender || '-'}</td>
+                      <td>{emp.gender || "-"}</td>
                       <td>{highlightContact(emp.contact, searchText)}</td>
-                      <td>{emp.birth_date || '-'}</td>
+                      <td>{emp.birth_date || "-"}</td>
                       <td>
-                        {[emp.address, emp.address_detail].filter(Boolean).join(' ') || '-'}
+                        {[emp.address, emp.address_detail]
+                          .filter(Boolean)
+                          .join(" ") || "-"}
                       </td>
-                      <td>{emp.desired_job_field || '-'}</td>
-                      <td>{Array.isArray(emp.employment_types) ? emp.employment_types.join(', ') : '-'}</td>
-                      <td>{emp.has_resume === true ? '보유' : emp.has_resume === false ? '미보유' : '-'}</td>
-                      <td>{emp.certifications || '-'}</td>
-                      <td>{emp.payment_amount ? `${emp.payment_amount.toLocaleString()}원` : '-'}</td>
+                      <td>{emp.desired_job_field || "-"}</td>
                       <td>
-                        <span className={`${styles.paymentBadge} ${styles[`payment_${emp.payment_status || 'pending'}`]}`}>
-                          {emp.payment_status === 'paid' ? '결제완료'
-                            : emp.payment_status === 'requested' ? '요청됨'
-                            : emp.payment_status === 'failed' ? '실패'
-                            : emp.payment_status === 'confirmed' ? '확정'
-                            : '대기'}
+                        {Array.isArray(emp.employment_types)
+                          ? emp.employment_types.join(", ")
+                          : "-"}
+                      </td>
+                      <td>
+                        {emp.has_resume === true
+                          ? "보유"
+                          : emp.has_resume === false
+                            ? "미보유"
+                            : "-"}
+                      </td>
+                      <td>{emp.certifications || "-"}</td>
+                      <td>
+                        {emp.payment_amount
+                          ? `${emp.payment_amount.toLocaleString()}원`
+                          : "-"}
+                      </td>
+                      <td>
+                        <span
+                          className={`${styles.paymentBadge} ${styles[`payment_${emp.payment_status || "pending"}`]}`}
+                        >
+                          {emp.payment_status === "paid"
+                            ? "결제완료"
+                            : emp.payment_status === "requested"
+                              ? "요청됨"
+                              : emp.payment_status === "failed"
+                                ? "실패"
+                                : emp.payment_status === "confirmed"
+                                  ? "확정"
+                                  : "대기"}
                         </span>
                       </td>
-                      <td>{emp.click_source || '-'}</td>
+                      <td>{emp.click_source || "-"}</td>
                       <td>{formatDate(emp.created_at)}</td>
                       <td>
                         <select
-                          value={emp.status || 'pending'}
+                          value={emp.status || "pending"}
                           onChange={async (e) => {
                             try {
-                              const response = await fetch('/api/employment-applications', {
-                                method: 'PATCH',
-                                headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify({ id: emp.id, status: e.target.value }),
-                              });
-                              if (!response.ok) throw new Error('업데이트 실패');
+                              const response = await fetch(
+                                "/api/employment-applications",
+                                {
+                                  method: "PATCH",
+                                  headers: {
+                                    "Content-Type": "application/json",
+                                  },
+                                  body: JSON.stringify({
+                                    id: emp.id,
+                                    status: e.target.value,
+                                  }),
+                                },
+                              );
+                              if (!response.ok)
+                                throw new Error("업데이트 실패");
                               fetchData();
                             } catch (error) {
-                              alert('상태 변경에 실패했습니다.');
+                              alert("상태 변경에 실패했습니다.");
                             }
                           }}
-                          className={`${styles.statusSelect} ${styles[`status${emp.status || 'pending'}`]}`}
+                          className={`${styles.statusSelect} ${styles[`status${emp.status || "pending"}`]}`}
                         >
                           <option value="pending">대기</option>
                           <option value="confirmed">확정</option>
@@ -1362,15 +1585,17 @@ export default function AdminPage() {
               >
                 이전
               </button>
-              {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
-                <button
-                  key={page}
-                  onClick={() => goToPage(page)}
-                  className={`${styles.pageButton} ${currentPage === page ? styles.activePage : ''}`}
-                >
-                  {page}
-                </button>
-              ))}
+              {Array.from({ length: totalPages }, (_, i) => i + 1).map(
+                (page) => (
+                  <button
+                    key={page}
+                    onClick={() => goToPage(page)}
+                    className={`${styles.pageButton} ${currentPage === page ? styles.activePage : ""}`}
+                  >
+                    {page}
+                  </button>
+                ),
+              )}
               <button
                 onClick={() => goToPage(currentPage + 1)}
                 disabled={currentPage === totalPages}
@@ -1385,10 +1610,18 @@ export default function AdminPage() {
 
       {/* 수동 추가 모달 */}
       {showAddModal && (
-        <div className={styles.modalOverlay} onClick={() => setShowAddModal(false)}>
-          <div className={styles.modalContent} onClick={(e) => e.stopPropagation()}>
+        <div
+          className={styles.modalOverlay}
+          onClick={() => setShowAddModal(false)}
+        >
+          <div
+            className={styles.modalContent}
+            onClick={(e) => e.stopPropagation()}
+          >
             <h2 className={styles.modalTitle}>
-              {formData.type === 'consultation' ? '상담신청 추가' : '실습신청서 추가'}
+              {formData.type === "consultation"
+                ? "상담신청 추가"
+                : "실습신청서 추가"}
             </h2>
             <form onSubmit={handleAddConsultation} className={styles.modalForm}>
               <div className={styles.formGroup}>
@@ -1397,7 +1630,9 @@ export default function AdminPage() {
                   type="text"
                   required
                   value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, name: e.target.value })
+                  }
                   placeholder="이름을 입력하세요"
                 />
               </div>
@@ -1418,7 +1653,9 @@ export default function AdminPage() {
                 <input
                   type="text"
                   value={formData.address}
-                  onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, address: e.target.value })
+                  }
                   placeholder="주소를 입력하세요 (선택사항)"
                 />
               </div>
@@ -1428,7 +1665,12 @@ export default function AdminPage() {
                 <label>폼 타입</label>
                 <select
                   value={formData.type}
-                  onChange={(e) => setFormData({ ...formData, type: e.target.value as FormType })}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      type: e.target.value as FormType,
+                    })
+                  }
                 >
                   <option value="consultation">상담신청</option>
                   <option value="취업연계">취업연계</option>
@@ -1440,7 +1682,12 @@ export default function AdminPage() {
                 <label>구법/신법</label>
                 <select
                   value={formData.study_method}
-                  onChange={(e) => setFormData({ ...formData, study_method: e.target.value as StudyMethod | '' })}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      study_method: e.target.value as StudyMethod | "",
+                    })
+                  }
                 >
                   <option value="">선택하세요</option>
                   <option value="구법">구법</option>
@@ -1449,39 +1696,51 @@ export default function AdminPage() {
                 </select>
               </div>
 
-              {formData.type === 'consultation' ? (
+              {formData.type === "consultation" ? (
                 <>
                   <div className={styles.formGroup}>
                     <label>진행과정</label>
                     <input
                       type="text"
                       value={formData.progress}
-                      onChange={(e) => setFormData({ ...formData, progress: e.target.value })}
+                      onChange={(e) =>
+                        setFormData({ ...formData, progress: e.target.value })
+                      }
                       placeholder="예: 상담 완료, 진행 중 (선택사항)"
                     />
                   </div>
                   <div className={styles.formGroup}>
                     <label>자격증 취득 후 취업여부</label>
-                    <div style={{ display: 'flex', gap: '16px' }}>
+                    <div style={{ display: "flex", gap: "16px" }}>
                       <label>
                         <input
                           type="radio"
                           name="employment_add"
                           value="O"
-                          checked={formData.employment_after_cert === 'O'}
-                          onChange={(e) => setFormData({ ...formData, employment_after_cert: e.target.value })}
-                        />
-                        {' '}O (예)
+                          checked={formData.employment_after_cert === "O"}
+                          onChange={(e) =>
+                            setFormData({
+                              ...formData,
+                              employment_after_cert: e.target.value,
+                            })
+                          }
+                        />{" "}
+                        O (예)
                       </label>
                       <label>
                         <input
                           type="radio"
                           name="employment_add"
                           value="X"
-                          checked={formData.employment_after_cert === 'X'}
-                          onChange={(e) => setFormData({ ...formData, employment_after_cert: e.target.value })}
-                        />
-                        {' '}X (아니오)
+                          checked={formData.employment_after_cert === "X"}
+                          onChange={(e) =>
+                            setFormData({
+                              ...formData,
+                              employment_after_cert: e.target.value,
+                            })
+                          }
+                        />{" "}
+                        X (아니오)
                       </label>
                     </div>
                   </div>
@@ -1493,32 +1752,47 @@ export default function AdminPage() {
                     <input
                       type="text"
                       value={formData.practice_place}
-                      onChange={(e) => setFormData({ ...formData, practice_place: e.target.value })}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          practice_place: e.target.value,
+                        })
+                      }
                       placeholder="실습처명 (선택사항)"
                     />
                   </div>
                   <div className={styles.formGroup}>
                     <label>자격증 취득 후 취업여부</label>
-                    <div style={{ display: 'flex', gap: '16px' }}>
+                    <div style={{ display: "flex", gap: "16px" }}>
                       <label>
                         <input
                           type="radio"
                           name="employment_add"
                           value="O"
-                          checked={formData.employment_after_cert === 'O'}
-                          onChange={(e) => setFormData({ ...formData, employment_after_cert: e.target.value })}
-                        />
-                        {' '}O (예)
+                          checked={formData.employment_after_cert === "O"}
+                          onChange={(e) =>
+                            setFormData({
+                              ...formData,
+                              employment_after_cert: e.target.value,
+                            })
+                          }
+                        />{" "}
+                        O (예)
                       </label>
                       <label>
                         <input
                           type="radio"
                           name="employment_add"
                           value="X"
-                          checked={formData.employment_after_cert === 'X'}
-                          onChange={(e) => setFormData({ ...formData, employment_after_cert: e.target.value })}
-                        />
-                        {' '}X (아니오)
+                          checked={formData.employment_after_cert === "X"}
+                          onChange={(e) =>
+                            setFormData({
+                              ...formData,
+                              employment_after_cert: e.target.value,
+                            })
+                          }
+                        />{" "}
+                        X (아니오)
                       </label>
                     </div>
                   </div>
@@ -1526,8 +1800,14 @@ export default function AdminPage() {
               )}
 
               <div className={styles.modalActions}>
-                <button type="submit" className={styles.submitButton}>추가하기</button>
-                <button type="button" onClick={() => setShowAddModal(false)} className={styles.cancelButton}>
+                <button type="submit" className={styles.submitButton}>
+                  추가하기
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowAddModal(false)}
+                  className={styles.cancelButton}
+                >
                   취소
                 </button>
               </div>
@@ -1538,19 +1818,32 @@ export default function AdminPage() {
 
       {/* 수정 모달 */}
       {showEditModal && selectedConsultation && (
-        <div className={styles.modalOverlay} onClick={() => setShowEditModal(false)}>
-          <div className={styles.modalContent} onClick={(e) => e.stopPropagation()}>
+        <div
+          className={styles.modalOverlay}
+          onClick={() => setShowEditModal(false)}
+        >
+          <div
+            className={styles.modalContent}
+            onClick={(e) => e.stopPropagation()}
+          >
             <h2 className={styles.modalTitle}>
-              {formData.type === 'consultation' ? '상담신청 수정' : '실습신청서 수정'}
+              {formData.type === "consultation"
+                ? "상담신청 수정"
+                : "실습신청서 수정"}
             </h2>
-            <form onSubmit={handleEditConsultation} className={styles.modalForm}>
+            <form
+              onSubmit={handleEditConsultation}
+              className={styles.modalForm}
+            >
               <div className={styles.formGroup}>
                 <label>이름 *</label>
                 <input
                   type="text"
                   required
                   value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, name: e.target.value })
+                  }
                   placeholder="이름을 입력하세요"
                 />
               </div>
@@ -1571,7 +1864,9 @@ export default function AdminPage() {
                 <input
                   type="text"
                   value={formData.address}
-                  onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, address: e.target.value })
+                  }
                   placeholder="주소를 입력하세요 (선택사항)"
                 />
               </div>
@@ -1580,7 +1875,12 @@ export default function AdminPage() {
                 <label>폼 타입</label>
                 <select
                   value={formData.type}
-                  onChange={(e) => setFormData({ ...formData, type: e.target.value as FormType })}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      type: e.target.value as FormType,
+                    })
+                  }
                 >
                   <option value="consultation">상담신청</option>
                   <option value="취업연계">취업연계</option>
@@ -1592,7 +1892,12 @@ export default function AdminPage() {
                 <label>구법/신법</label>
                 <select
                   value={formData.study_method}
-                  onChange={(e) => setFormData({ ...formData, study_method: e.target.value as StudyMethod | '' })}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      study_method: e.target.value as StudyMethod | "",
+                    })
+                  }
                 >
                   <option value="">선택하세요</option>
                   <option value="구법">구법</option>
@@ -1601,39 +1906,51 @@ export default function AdminPage() {
                 </select>
               </div>
 
-              {formData.type === 'consultation' ? (
+              {formData.type === "consultation" ? (
                 <>
                   <div className={styles.formGroup}>
                     <label>진행과정</label>
                     <input
                       type="text"
                       value={formData.progress}
-                      onChange={(e) => setFormData({ ...formData, progress: e.target.value })}
+                      onChange={(e) =>
+                        setFormData({ ...formData, progress: e.target.value })
+                      }
                       placeholder="예: 상담 완료, 진행 중 (선택사항)"
                     />
                   </div>
                   <div className={styles.formGroup}>
                     <label>자격증 취득 후 취업여부</label>
-                    <div style={{ display: 'flex', gap: '16px' }}>
+                    <div style={{ display: "flex", gap: "16px" }}>
                       <label>
                         <input
                           type="radio"
                           name="employment_edit"
                           value="O"
-                          checked={formData.employment_after_cert === 'O'}
-                          onChange={(e) => setFormData({ ...formData, employment_after_cert: e.target.value })}
-                        />
-                        {' '}O (예)
+                          checked={formData.employment_after_cert === "O"}
+                          onChange={(e) =>
+                            setFormData({
+                              ...formData,
+                              employment_after_cert: e.target.value,
+                            })
+                          }
+                        />{" "}
+                        O (예)
                       </label>
                       <label>
                         <input
                           type="radio"
                           name="employment_edit"
                           value="X"
-                          checked={formData.employment_after_cert === 'X'}
-                          onChange={(e) => setFormData({ ...formData, employment_after_cert: e.target.value })}
-                        />
-                        {' '}X (아니오)
+                          checked={formData.employment_after_cert === "X"}
+                          onChange={(e) =>
+                            setFormData({
+                              ...formData,
+                              employment_after_cert: e.target.value,
+                            })
+                          }
+                        />{" "}
+                        X (아니오)
                       </label>
                     </div>
                   </div>
@@ -1645,32 +1962,47 @@ export default function AdminPage() {
                     <input
                       type="text"
                       value={formData.practice_place}
-                      onChange={(e) => setFormData({ ...formData, practice_place: e.target.value })}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          practice_place: e.target.value,
+                        })
+                      }
                       placeholder="실습처명 (선택사항)"
                     />
                   </div>
                   <div className={styles.formGroup}>
                     <label>자격증 취득 후 취업여부</label>
-                    <div style={{ display: 'flex', gap: '16px' }}>
+                    <div style={{ display: "flex", gap: "16px" }}>
                       <label>
                         <input
                           type="radio"
                           name="employment_edit"
                           value="O"
-                          checked={formData.employment_after_cert === 'O'}
-                          onChange={(e) => setFormData({ ...formData, employment_after_cert: e.target.value })}
-                        />
-                        {' '}O (예)
+                          checked={formData.employment_after_cert === "O"}
+                          onChange={(e) =>
+                            setFormData({
+                              ...formData,
+                              employment_after_cert: e.target.value,
+                            })
+                          }
+                        />{" "}
+                        O (예)
                       </label>
                       <label>
                         <input
                           type="radio"
                           name="employment_edit"
                           value="X"
-                          checked={formData.employment_after_cert === 'X'}
-                          onChange={(e) => setFormData({ ...formData, employment_after_cert: e.target.value })}
-                        />
-                        {' '}X (아니오)
+                          checked={formData.employment_after_cert === "X"}
+                          onChange={(e) =>
+                            setFormData({
+                              ...formData,
+                              employment_after_cert: e.target.value,
+                            })
+                          }
+                        />{" "}
+                        X (아니오)
                       </label>
                     </div>
                   </div>
@@ -1678,8 +2010,14 @@ export default function AdminPage() {
               )}
 
               <div className={styles.modalActions}>
-                <button type="submit" className={styles.submitButton}>수정하기</button>
-                <button type="button" onClick={() => setShowEditModal(false)} className={styles.cancelButton}>
+                <button type="submit" className={styles.submitButton}>
+                  수정하기
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowEditModal(false)}
+                  className={styles.cancelButton}
+                >
                   취소
                 </button>
               </div>
@@ -1691,11 +2029,20 @@ export default function AdminPage() {
       {/* 메모 편집 모달 */}
       {showMemoModal && (selectedConsultation || selectedPractice) && (
         <div className={styles.modalOverlay} onClick={closeMemoModal}>
-          <div className={styles.modalContent} onClick={(e) => e.stopPropagation()}>
+          <div
+            className={styles.modalContent}
+            onClick={(e) => e.stopPropagation()}
+          >
             <h2 className={styles.modalTitle}>메모 편집</h2>
             <div className={styles.memoInfo}>
-              <p><strong>이름:</strong> {selectedConsultation?.name ?? selectedPractice?.name}</p>
-              <p><strong>연락처:</strong> {selectedConsultation?.contact ?? selectedPractice?.contact}</p>
+              <p>
+                <strong>이름:</strong>{" "}
+                {selectedConsultation?.name ?? selectedPractice?.name}
+              </p>
+              <p>
+                <strong>연락처:</strong>{" "}
+                {selectedConsultation?.contact ?? selectedPractice?.contact}
+              </p>
             </div>
             <div className={styles.formGroup}>
               <label>메모</label>
@@ -1708,7 +2055,10 @@ export default function AdminPage() {
               />
             </div>
             <div className={styles.modalActions}>
-              <button onClick={handleUpdateMemo} className={styles.submitButton}>
+              <button
+                onClick={handleUpdateMemo}
+                className={styles.submitButton}
+              >
                 저장
               </button>
               <button onClick={closeMemoModal} className={styles.cancelButton}>
@@ -1718,7 +2068,6 @@ export default function AdminPage() {
           </div>
         </div>
       )}
-
     </div>
   );
 }
